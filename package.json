@@ -2,7 +2,7 @@
   "name": "ua-hints",
   "description": "It generates UA CH headers for the user agent",
   "homepage": "https://github.com/kikobeats/ua-hints",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "main": "src/index.js",
   "author": {
     "email": "josefrancisco.verdu@gmail.com",
