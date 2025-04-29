@@ -38,7 +38,7 @@ uaHint('Mozilla/5.0 (Windows NT 10.0; Win64; x64; WOW64) AppleWebKit/537.36 (KHT
 // }
 ```
 
-The library implementing Chromium GREASE[(¹)](https://stackoverflow.com/a/64443187)[(²)](https://github.com/chromium/chromium/commit/19ad8d3cab21013ce2d40cf2ec84267bb04b08ec) includes intentionally incorrect data to prevent ossification attacks.
+The library implements Chromium's GREASEing strategy [(¹)](https://stackoverflow.com/a/64443187)[(²)](https://github.com/chromium/chromium/commit/19ad8d3cab21013ce2d40cf2ec84267bb04b08ec) includes intentionally incorrect data to prevent ossification attacks.
 
 ## License
 
