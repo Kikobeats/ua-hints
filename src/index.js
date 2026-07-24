@@ -4,7 +4,15 @@ const UAParser = require('ua-parser-js')
 
 const quote = str => `"${str.replace(/"/g, '\\"')}"`
 
-const generateBrandVersionList = (seed, brand, majorVersion) => {
+// Chromium GREASE + brand-list ordering. Keep in sync with
+// components/embedder_support/user_agent_utils.cc
+// (GenerateBrandVersionList / GetGreasedUserAgentBrandVersion).
+const generateBrandVersionList = (
+  seed,
+  brand,
+  brandVersion,
+  chromiumVersion
+) => {
   const permutations = [
     [0, 1, 2],
     [0, 2, 1],
@@ -14,17 +22,23 @@ const generateBrandVersionList = (seed, brand, majorVersion) => {
     [2, 1, 0]
   ]
 
-  const escapedChars = ['\\', '"', ';']
+  const greaseyChars = [' ', '(', ':', '-', '.', '/', ')', ';', '=', '?', '_']
+  const greasedVersions = ['8', '99', '24']
   const permutation = permutations[seed % permutations.length]
 
-  const greaseyBrand = `${escapedChars[permutation[0]]}Not${escapedChars[permutation[1]]}A${escapedChars[permutation[2]]}Brand`
-  const greaseyBrandVersion = { brand: greaseyBrand, version: '99' }
-  const chromiumBrandVersion = { brand: 'Chromium', version: majorVersion }
+  const greaseyBrand = `Not${greaseyChars[seed % greaseyChars.length]}A${
+    greaseyChars[(seed + 1) % greaseyChars.length]
+  }Brand`
+  const greaseyBrandVersion = {
+    brand: greaseyBrand,
+    version: greasedVersions[seed % greasedVersions.length]
+  }
+  const chromiumBrandVersion = { brand: 'Chromium', version: chromiumVersion }
 
   const brandList = []
 
   if (brand) {
-    const mainBrandVersion = { brand, version: majorVersion }
+    const mainBrandVersion = { brand, version: brandVersion }
     brandList[permutation[0]] = greaseyBrandVersion
     brandList[permutation[1]] = chromiumBrandVersion
     brandList[permutation[2]] = mainBrandVersion
@@ -47,12 +61,20 @@ const getArchAndBitness = userAgent => {
 
 module.exports = userAgent => {
   const parser = new UAParser(userAgent)
-  const { name: browserBrand = '', version: browserFullVersion = '' } = parser.getBrowser()
+  const { name: browserBrand = '', version: browserFullVersion = '' } =
+    parser.getBrowser()
+  const { version: engineFullVersion = '' } = parser.getEngine()
   const { name: platform = '', version: platformVersion = '' } = parser.getOS()
   const { model = '', type: deviceType = '' } = parser.getDevice()
 
   const isMobile = ['mobile', 'tablet'].includes(deviceType)
   const browserMajorVersion = browserFullVersion.split('.')[0] || ''
+  // Chromium-based browsers report the embedder version as the browser version
+  // (e.g. Opera 106) while the engine version is the Chromium major (e.g. 120).
+  // GREASE seed + Chromium brand must follow the engine version.
+  const chromiumFullVersion = engineFullVersion || browserFullVersion
+  const chromiumMajorVersion =
+    chromiumFullVersion.split('.')[0] || browserMajorVersion
 
   const { arch, bitness } = getArchAndBitness(userAgent)
   const wow64 = userAgent.toLowerCase().includes('wow64') ? '?1' : '?0'
@@ -60,6 +82,8 @@ module.exports = userAgent => {
 
   const brandsMap = {
     Chrome: 'Google Chrome',
+    // ua-parser-js reports Android Chrome as "Mobile Chrome"
+    'Mobile Chrome': 'Google Chrome',
     Chromium: 'Chromium',
     Edge: 'Microsoft Edge',
     Opera: 'Opera',
@@ -68,8 +92,13 @@ module.exports = userAgent => {
   }
   const officialBrand = brandsMap[browserBrand] || browserBrand || undefined
 
-  const seed = parseInt(browserMajorVersion, 10) || 0
-  const brandList = generateBrandVersionList(seed, officialBrand, browserMajorVersion)
+  const seed = parseInt(chromiumMajorVersion, 10) || 0
+  const brandList = generateBrandVersionList(
+    seed,
+    officialBrand,
+    browserMajorVersion,
+    chromiumMajorVersion
+  )
 
   const hints = {}
 
@@ -105,7 +134,8 @@ module.exports = userAgent => {
     hints['sec-ch-ua-full-version'] = quote(browserFullVersion)
 
     if (officialBrand) {
-      hints['sec-ch-ua-full-version-list'] = `${quote(officialBrand)};v=${quote(browserFullVersion)}`
+      hints['sec-ch-ua-full-version-list'] =
+        `${quote(officialBrand)};v=${quote(browserFullVersion)}`
     }
   }
 
