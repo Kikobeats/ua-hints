@@ -38,10 +38,12 @@ const generateBrandVersionList = (seed, brand, majorVersion) => {
 
 const getArchAndBitness = userAgent => {
   const uaLower = userAgent.toLowerCase()
-  if (/x86_64|amd64|win64|x64/.test(uaLower)) return { arch: 'x86', bitness: '64' }
-  if (/i686|i386|win32|x86/.test(uaLower)) return { arch: 'x86', bitness: '32' }
+  // ARM must be checked before win64/x64: Windows on ARM UAs look like
+  // "Win64; ARM64", and the x86 patterns would otherwise win first.
   if (/arm64|aarch64/.test(uaLower)) return { arch: 'arm', bitness: '64' }
   if (/arm/.test(uaLower)) return { arch: 'arm', bitness: '32' }
+  if (/x86_64|amd64|win64|x64/.test(uaLower)) return { arch: 'x86', bitness: '64' }
+  if (/i686|i386|win32|x86/.test(uaLower)) return { arch: 'x86', bitness: '32' }
   return { arch: '', bitness: '' }
 }
 
