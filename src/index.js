@@ -97,7 +97,10 @@ module.exports = userAgent => {
     hints['sec-ch-ua-bitness'] = quote(bitness)
   }
 
-  if (model) {
+  // UA-CH: model MUST be empty when mobileness is false. ua-parser-js reports
+  // model "Macintosh" for desktop Mac UAs; emitting that would contradict
+  // sec-ch-ua-mobile=?0 and diverge from real Chromium.
+  if (model && isMobile) {
     hints['sec-ch-ua-model'] = quote(model)
   }
 
