@@ -97,7 +97,12 @@ module.exports = userAgent => {
     hints['sec-ch-ua-bitness'] = quote(bitness)
   }
 
-  if (model) {
+  // Chrome's reduced UA freezes the Android device model to the literal
+  // placeholder "K". Real Chromium never sends that token as
+  // Sec-CH-UA-Model (it sends the actual model, or omits the hint).
+  // Emitting "K" is a trivial bot-detection signal and invents a device
+  // that does not exist.
+  if (model && model !== 'K') {
     hints['sec-ch-ua-model'] = quote(model)
   }
 
