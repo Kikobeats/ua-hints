@@ -1,6 +1,6 @@
 {
   "name": "ua-hints",
-  "description": "It generates UA CH headers for the user agent",
+  "description": "Generate Client Hints (Sec-CH-UA) HTTP headers that match a given browser User-Agent string.",
   "homepage": "https://github.com/kikobeats/ua-hints",
   "version": "1.0.2",
   "main": "src/index.js",
@@ -18,17 +18,16 @@
     "url": "https://github.com/kikobeats/ua-hints/issues"
   },
   "keywords": [
+    "browser",
+    "chrome",
+    "client-hints",
+    "fingerprint",
+    "headers",
+    "hints",
+    "http",
     "sec-ch-ua",
-    "sec-ch-ua-arch",
-    "sec-ch-ua-bitness",
-    "sec-ch-ua-form-factors",
-    "sec-ch-ua-full-version",
-    "sec-ch-ua-full-version-list",
-    "sec-ch-ua-mobile",
-    "sec-ch-ua-model",
-    "sec-ch-ua-platform",
-    "sec-ch-ua-platform-version",
-    "sec-ch-ua-wow64"
+    "ua",
+    "user-agent"
   ],
   "dependencies": {
     "ua-parser-js": "~2.0.3"
@@ -79,6 +78,7 @@
   },
   "nano-staged": {
     "*.js": [
+      "npx @kikobeats/prettier-standard",
       "standard --fix"
     ],
     "*.md": [
