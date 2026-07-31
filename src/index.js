@@ -104,8 +104,19 @@ module.exports = userAgent => {
   if (browserFullVersion) {
     hints['sec-ch-ua-full-version'] = quote(browserFullVersion)
 
-    if (officialBrand) {
-      hints['sec-ch-ua-full-version-list'] = `${quote(officialBrand)};v=${quote(browserFullVersion)}`
+    // Mirror sec-ch-ua brand ordering with full versions. Emitting only the
+    // main brand here makes full-version-list disagree with sec-ch-ua, which
+    // fingerprint checks treat as non-browser traffic.
+    if (brandList.length) {
+      hints['sec-ch-ua-full-version-list'] = brandList
+        .map(({ brand, version }) => {
+          const fullVersion =
+            brand === officialBrand || brand === 'Chromium'
+              ? browserFullVersion
+              : `${version}.0.0.0`
+          return `${quote(brand)};v=${quote(fullVersion)}`
+        })
+        .join(', ')
     }
   }
 
