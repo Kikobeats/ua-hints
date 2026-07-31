@@ -2,7 +2,7 @@
 
 const uaHints = require('..')
 
-const test = require('ava')
+const test = require('ava').default
 
 test('get client hints', t => {
   const userAgent =
