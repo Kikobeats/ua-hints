@@ -25,14 +25,14 @@ const uaHints = require('ua-hints')
 
 uaHint('Mozilla/5.0 (Windows NT 10.0; Win64; x64; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.109 Safari/537.36')
 // {
-//   'sec-ch-ua': '"Chrome";v="120"',
+//   'sec-ch-ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
 //   'sec-ch-ua-mobile': '?0',
 //   'sec-ch-ua-platform': '"Windows"',
 //   'sec-ch-ua-platform-version': '"10"',
 //   'sec-ch-ua-arch': '"x86"',
 //   'sec-ch-ua-bitness': '"64"',
 //   'sec-ch-ua-full-version': '"120.0.6099.109"',
-//   'sec-ch-ua-full-version-list': '"Chrome";v="120.0.6099.109"',
+//   'sec-ch-ua-full-version-list': '"Not_A Brand";v="8.0.0.0", "Chromium";v="120.0.6099.109", "Google Chrome";v="120.0.6099.109"',
 //   'sec-ch-ua-wow64': '?1',
 //   'sec-ch-ua-form-factors': '["Desktop"]'
 // }
