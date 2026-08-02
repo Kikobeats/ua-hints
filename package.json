@@ -2,7 +2,7 @@
   "name": "ua-hints",
   "description": "Generate Client Hints (Sec-CH-UA) HTTP headers that match a given browser User-Agent string.",
   "homepage": "https://github.com/kikobeats/ua-hints",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "src/index.js",
   "author": {
     "email": "josefrancisco.verdu@gmail.com",
