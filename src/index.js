@@ -2,9 +2,9 @@
 
 const UAParser = require('ua-parser-js')
 
-const quote = str => `"${str.replace(/"/g, '\\"')}"`
+const quote = value => JSON.stringify(value)
 
-const majorVersion = version => version.split('.')[0] || ''
+const majorVersion = version => version.split('.')[0]
 
 // Chromium's reduced Android User-Agent freezes the device model to this
 // literal placeholder rather than omitting it.
@@ -44,31 +44,24 @@ const greaseBrandVersion = seed => ({
 })
 
 const generateBrandVersionList = (
-  seed,
   brand,
   brandFullVersion,
   chromiumFullVersion
 ) => {
+  if (!brand) return []
+
+  const seed = parseInt(chromiumFullVersion, 10) || 0
   const order = BRAND_ORDERS[seed % BRAND_ORDERS.length]
 
-  const grease = greaseBrandVersion(seed)
-  const chromium = { brand: 'Chromium', fullVersion: chromiumFullVersion }
-
   const brandList = []
-
-  if (brand) {
-    brandList[order[0]] = grease
-    brandList[order[1]] = chromium
-    brandList[order[2]] = { brand, fullVersion: brandFullVersion }
-  } else {
-    brandList[seed % 2] = grease
-    brandList[(seed + 1) % 2] = chromium
-  }
+  brandList[order[0]] = greaseBrandVersion(seed)
+  brandList[order[1]] = { brand: 'Chromium', fullVersion: chromiumFullVersion }
+  brandList[order[2]] = { brand, fullVersion: brandFullVersion }
 
   return brandList
 }
 
-const serializeBrands = (brandList, versionOf) =>
+const serializeBrands = (brandList, versionOf = version => version) =>
   brandList
     .map(
       ({ brand, fullVersion }) =>
@@ -78,8 +71,8 @@ const serializeBrands = (brandList, versionOf) =>
 
 const getArchAndBitness = uaLower => {
   const arch = ARM.test(uaLower) ? 'arm' : X86.test(uaLower) ? 'x86' : ''
-  if (!arch) return { arch: '', bitness: '' }
-  return { arch, bitness: SIXTY_FOUR_BIT.test(uaLower) ? '64' : '32' }
+  const bitness = arch && (SIXTY_FOUR_BIT.test(uaLower) ? '64' : '32')
+  return { arch, bitness }
 }
 
 module.exports = userAgent => {
@@ -106,9 +99,7 @@ module.exports = userAgent => {
       ? engineFullVersion
       : browserFullVersion
 
-  const seed = parseInt(majorVersion(chromiumFullVersion), 10) || 0
   const brandList = generateBrandVersionList(
-    seed,
     officialBrand,
     browserFullVersion,
     chromiumFullVersion
@@ -152,10 +143,7 @@ module.exports = userAgent => {
 
   if (browserFullVersion) {
     hints['sec-ch-ua-full-version'] = quote(browserFullVersion)
-    hints['sec-ch-ua-full-version-list'] = serializeBrands(
-      brandList,
-      fullVersion => fullVersion
-    )
+    hints['sec-ch-ua-full-version-list'] = serializeBrands(brandList)
   }
 
   hints['sec-ch-ua-wow64'] = uaLower.includes('wow64') ? '?1' : '?0'

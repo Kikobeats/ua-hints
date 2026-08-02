@@ -4,10 +4,28 @@ const test = require('ava').default
 
 const uaHints = require('..')
 
-const chromeUA = (platform, version = '120.0.6099.109') =>
-  `Mozilla/5.0 (${platform}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${version} Safari/537.36`
+const chromeUA = (
+  platform,
+  version = '120.0.6099.109',
+  trailer = 'Safari/537.36'
+) =>
+  `Mozilla/5.0 (${platform}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${version} ${trailer}`
 
 const CHROME_120_WINDOWS = chromeUA('Windows NT 10.0; Win64; x64; WOW64')
+const CHROME_135_MAC = chromeUA(
+  'Macintosh; Intel Mac OS X 10_15_7',
+  '135.0.0.0'
+)
+const CHROME_120_PIXEL_7 = chromeUA(
+  'Linux; Android 13; Pixel 7',
+  '120.0.6099.144',
+  'Mobile Safari/537.36'
+)
+const OPERA_106 = chromeUA(
+  'Windows NT 10.0; Win64; x64',
+  '120.0.0.0',
+  'Safari/537.36 OPR/106.0.0.0'
+)
 
 test('get client hints', t => {
   t.deepEqual(uaHints(CHROME_120_WINDOWS), {
@@ -27,9 +45,7 @@ test('get client hints', t => {
 })
 
 test('sets `sec-ch-ua`', t => {
-  const headers = uaHints(
-    chromeUA('Macintosh; Intel Mac OS X 10_15_7', '135.0.0.0')
-  )
+  const headers = uaHints(CHROME_135_MAC)
   t.is(
     headers['sec-ch-ua'],
     '"Google Chrome";v="135", "Not-A.Brand";v="8", "Chromium";v="135"'
@@ -62,9 +78,9 @@ test('`sec-ch-ua-full-version-list` always mirrors the `sec-ch-ua` brands', t =>
 
   for (const userAgent of [
     CHROME_120_WINDOWS,
-    chromeUA('Macintosh; Intel Mac OS X 10_15_7', '135.0.0.0'),
-    'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.144 Mobile Safari/537.36',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 OPR/106.0.0.0'
+    CHROME_135_MAC,
+    CHROME_120_PIXEL_7,
+    OPERA_106
   ]) {
     const headers = uaHints(userAgent)
     t.deepEqual(
@@ -76,9 +92,7 @@ test('`sec-ch-ua-full-version-list` always mirrors the `sec-ch-ua` brands', t =>
 })
 
 test('brands Android Chrome as Google Chrome', t => {
-  const headers = uaHints(
-    'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.144 Mobile Safari/537.36'
-  )
+  const headers = uaHints(CHROME_120_PIXEL_7)
 
   t.is(
     headers['sec-ch-ua'],
@@ -102,9 +116,7 @@ test('mobile builds keep the desktop brand name', t => {
 })
 
 test('embedders keep their own version while Chromium follows Blink', t => {
-  const opera = uaHints(
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 OPR/106.0.0.0'
-  )
+  const opera = uaHints(OPERA_106)
 
   t.is(
     opera['sec-ch-ua'],
@@ -119,7 +131,11 @@ test('embedders keep their own version while Chromium follows Blink', t => {
 
 test('brands Edge as Microsoft Edge', t => {
   const headers = uaHints(
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.2210.61'
+    chromeUA(
+      'Windows NT 10.0; Win64; x64',
+      '120.0.0.0',
+      'Safari/537.36 Edg/120.0.2210.61'
+    )
   )
 
   t.is(
@@ -156,7 +172,7 @@ test('omits `sec-ch-ua-model` on desktop', t => {
 
 test('omits the reduced User-Agent placeholder model', t => {
   const headers = uaHints(
-    'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
+    chromeUA('Linux; Android 10; K', '120.0.0.0', 'Mobile Safari/537.36')
   )
 
   t.false('sec-ch-ua-model' in headers)
@@ -166,7 +182,7 @@ test('omits the reduced User-Agent placeholder model', t => {
 
 test('tablets are not mobile and report the Tablet form factor', t => {
   const headers = uaHints(
-    'Mozilla/5.0 (Linux; Android 13; Pixel Tablet) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    chromeUA('Linux; Android 13; Pixel Tablet', '120.0.0.0')
   )
 
   t.is(headers['sec-ch-ua-mobile'], '?0')
@@ -191,6 +207,7 @@ test('an unparseable user agent yields no versioned hints', t => {
 
   t.is(headers['sec-ch-ua-mobile'], '?0')
   t.is(headers['sec-ch-ua-form-factors'], '["Desktop"]')
+  t.false('sec-ch-ua' in headers)
   t.false('sec-ch-ua-full-version' in headers)
   t.false('sec-ch-ua-full-version-list' in headers)
 })
