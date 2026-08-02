@@ -17,7 +17,9 @@ const generateBrandVersionList = (seed, brand, majorVersion) => {
   const escapedChars = ['\\', '"', ';']
   const permutation = permutations[seed % permutations.length]
 
-  const greaseyBrand = `${escapedChars[permutation[0]]}Not${escapedChars[permutation[1]]}A${escapedChars[permutation[2]]}Brand`
+  const greaseyBrand = `${escapedChars[permutation[0]]}Not${
+    escapedChars[permutation[1]]
+  }A${escapedChars[permutation[2]]}Brand`
   const greaseyBrandVersion = { brand: greaseyBrand, version: '99' }
   const chromiumBrandVersion = { brand: 'Chromium', version: majorVersion }
 
@@ -38,7 +40,7 @@ const generateBrandVersionList = (seed, brand, majorVersion) => {
 
 const getArchAndBitness = userAgent => {
   const uaLower = userAgent.toLowerCase()
-  if (/x86_64|amd64|win64|x64/.test(uaLower)) return { arch: 'x86', bitness: '64' }
+  if (/x86_64|amd64|win64|x64/.test(uaLower)) { return { arch: 'x86', bitness: '64' } }
   if (/i686|i386|win32|x86/.test(uaLower)) return { arch: 'x86', bitness: '32' }
   if (/arm64|aarch64/.test(uaLower)) return { arch: 'arm', bitness: '64' }
   if (/arm/.test(uaLower)) return { arch: 'arm', bitness: '32' }
@@ -47,16 +49,25 @@ const getArchAndBitness = userAgent => {
 
 module.exports = userAgent => {
   const parser = new UAParser(userAgent)
-  const { name: browserBrand = '', version: browserFullVersion = '' } = parser.getBrowser()
+  const { name: browserBrand = '', version: browserFullVersion = '' } =
+    parser.getBrowser()
   const { name: platform = '', version: platformVersion = '' } = parser.getOS()
   const { model = '', type: deviceType = '' } = parser.getDevice()
 
-  const isMobile = ['mobile', 'tablet'].includes(deviceType)
+  // Chrome reports Sec-CH-UA-Mobile=?0 for tablets (phone-only is ?1) and
+  // Sec-CH-UA-Form-Factors: "Tablet". Treating tablet as mobile mismatches
+  // real Chromium and breaks phone-vs-tablet detection after UA reduction.
+  const isMobile = deviceType === 'mobile'
+  const isTablet = deviceType === 'tablet'
   const browserMajorVersion = browserFullVersion.split('.')[0] || ''
 
   const { arch, bitness } = getArchAndBitness(userAgent)
   const wow64 = userAgent.toLowerCase().includes('wow64') ? '?1' : '?0'
-  const formFactors = isMobile ? '["Mobile"]' : '["Desktop"]'
+  const formFactors = isMobile
+    ? '["Mobile"]'
+    : isTablet
+      ? '["Tablet"]'
+      : '["Desktop"]'
 
   const brandsMap = {
     Chrome: 'Google Chrome',
@@ -69,7 +80,11 @@ module.exports = userAgent => {
   const officialBrand = brandsMap[browserBrand] || browserBrand || undefined
 
   const seed = parseInt(browserMajorVersion, 10) || 0
-  const brandList = generateBrandVersionList(seed, officialBrand, browserMajorVersion)
+  const brandList = generateBrandVersionList(
+    seed,
+    officialBrand,
+    browserMajorVersion
+  )
 
   const hints = {}
 
@@ -105,7 +120,9 @@ module.exports = userAgent => {
     hints['sec-ch-ua-full-version'] = quote(browserFullVersion)
 
     if (officialBrand) {
-      hints['sec-ch-ua-full-version-list'] = `${quote(officialBrand)};v=${quote(browserFullVersion)}`
+      hints['sec-ch-ua-full-version-list'] = `${quote(officialBrand)};v=${quote(
+        browserFullVersion
+      )}`
     }
   }
 
