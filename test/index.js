@@ -4,8 +4,10 @@ const test = require('ava').default
 
 const uaHints = require('..')
 
-const CHROME_120_WINDOWS =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.109 Safari/537.36'
+const chromeUA = (platform, version = '120.0.6099.109') =>
+  `Mozilla/5.0 (${platform}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${version} Safari/537.36`
+
+const CHROME_120_WINDOWS = chromeUA('Windows NT 10.0; Win64; x64; WOW64')
 
 test('get client hints', t => {
   t.deepEqual(uaHints(CHROME_120_WINDOWS), {
@@ -25,9 +27,9 @@ test('get client hints', t => {
 })
 
 test('sets `sec-ch-ua`', t => {
-  const userAgent =
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36'
-  const headers = uaHints(userAgent)
+  const headers = uaHints(
+    chromeUA('Macintosh; Intel Mac OS X 10_15_7', '135.0.0.0')
+  )
   t.is(
     headers['sec-ch-ua'],
     '"Google Chrome";v="135", "Not-A.Brand";v="8", "Chromium";v="135"'
@@ -36,9 +38,9 @@ test('sets `sec-ch-ua`', t => {
 
 test('`sec-ch-ua` GREASE matches what Chromium ships', t => {
   const brandsOf = major =>
-    uaHints(
-      `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${major}.0.0.0 Safari/537.36`
-    )['sec-ch-ua']
+    uaHints(chromeUA('Windows NT 10.0; Win64; x64', `${major}.0.0.0`))[
+      'sec-ch-ua'
+    ]
 
   t.is(
     brandsOf(120),
@@ -54,21 +56,29 @@ test('`sec-ch-ua` GREASE matches what Chromium ships', t => {
   )
 })
 
-test('`sec-ch-ua-full-version-list` mirrors `sec-ch-ua` brands', t => {
-  const headers = uaHints(CHROME_120_WINDOWS)
+test('`sec-ch-ua-full-version-list` always mirrors the `sec-ch-ua` brands', t => {
+  const brandsOf = value =>
+    value.split(', ').map(entry => entry.split(';v=')[0])
 
-  const brands = value => value.split(', ').map(entry => entry.split(';v=')[0])
-
-  t.deepEqual(
-    brands(headers['sec-ch-ua-full-version-list']),
-    brands(headers['sec-ch-ua'])
-  )
+  for (const userAgent of [
+    CHROME_120_WINDOWS,
+    chromeUA('Macintosh; Intel Mac OS X 10_15_7', '135.0.0.0'),
+    'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.144 Mobile Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 OPR/106.0.0.0'
+  ]) {
+    const headers = uaHints(userAgent)
+    t.deepEqual(
+      brandsOf(headers['sec-ch-ua-full-version-list']),
+      brandsOf(headers['sec-ch-ua']),
+      userAgent
+    )
+  }
 })
 
 test('brands Android Chrome as Google Chrome', t => {
-  const userAgent =
+  const headers = uaHints(
     'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.144 Mobile Safari/537.36'
-  const headers = uaHints(userAgent)
+  )
 
   t.is(
     headers['sec-ch-ua'],
@@ -77,6 +87,18 @@ test('brands Android Chrome as Google Chrome', t => {
   t.is(headers['sec-ch-ua-mobile'], '?1')
   t.is(headers['sec-ch-ua-model'], '"Pixel 7"')
   t.is(headers['sec-ch-ua-form-factors'], '["Mobile"]')
+})
+
+test('mobile builds keep the desktop brand name', t => {
+  const safari = uaHints(
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+  )
+  const firefox = uaHints(
+    'Mozilla/5.0 (Android 13; Mobile; rv:121.0) Gecko/121.0 Firefox/121.0'
+  )
+
+  t.true(safari['sec-ch-ua'].includes('"Safari";v="17"'))
+  t.true(firefox['sec-ch-ua'].includes('"Mozilla Firefox";v="121"'))
 })
 
 test('embedders keep their own version while Chromium follows Blink', t => {
@@ -107,42 +129,25 @@ test('brands Edge as Microsoft Edge', t => {
   t.is(headers['sec-ch-ua-full-version'], '"120.0.2210.61"')
 })
 
-test('detects arm before Win64 on Windows on ARM', t => {
-  const headers = uaHints(
-    'Mozilla/5.0 (Windows NT 10.0; Win64; ARM64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.109 Safari/537.36'
-  )
+test('detects architecture and bitness', t => {
+  // Windows on ARM reports both Win64 and ARM64; only the latter is the arch.
+  const architectures = [
+    ['Windows NT 10.0; Win64; ARM64', '"arm"', '"64"'],
+    ['Windows NT 10.0; Win64; x64', '"x86"', '"64"'],
+    ['X11; Linux armv7l', '"arm"', '"32"'],
+    ['X11; Linux i686', '"x86"', '"32"'],
+    ['Macintosh; Intel Mac OS X 10_15_7', undefined, undefined]
+  ]
 
-  t.is(headers['sec-ch-ua-arch'], '"arm"')
-  t.is(headers['sec-ch-ua-bitness'], '"64"')
-})
-
-test('detects x86 on Windows x64', t => {
-  const headers = uaHints(
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.109 Safari/537.36'
-  )
-
-  t.is(headers['sec-ch-ua-arch'], '"x86"')
-  t.is(headers['sec-ch-ua-bitness'], '"64"')
-})
-
-test('detects 32 bit architectures', t => {
-  const arm = uaHints(
-    'Mozilla/5.0 (X11; Linux armv7l) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-  )
-  t.is(arm['sec-ch-ua-arch'], '"arm"')
-  t.is(arm['sec-ch-ua-bitness'], '"32"')
-
-  const x86 = uaHints(
-    'Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-  )
-  t.is(x86['sec-ch-ua-arch'], '"x86"')
-  t.is(x86['sec-ch-ua-bitness'], '"32"')
+  for (const [platform, arch, bitness] of architectures) {
+    const headers = uaHints(chromeUA(platform))
+    t.is(headers['sec-ch-ua-arch'], arch, platform)
+    t.is(headers['sec-ch-ua-bitness'], bitness, platform)
+  }
 })
 
 test('omits `sec-ch-ua-model` on desktop', t => {
-  const headers = uaHints(
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.109 Safari/537.36'
-  )
+  const headers = uaHints(chromeUA('Macintosh; Intel Mac OS X 10_15_7'))
 
   t.is(headers['sec-ch-ua-mobile'], '?0')
   t.is(headers['sec-ch-ua-form-factors'], '["Desktop"]')

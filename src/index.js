@@ -7,11 +7,8 @@ const quote = str => `"${str.replace(/"/g, '\\"')}"`
 const majorVersion = version => version.split('.')[0] || ''
 
 // Chromium's reduced Android User-Agent freezes the device model to this
-// literal placeholder. Real Chromium sends the actual model in the hint, so
-// forwarding the placeholder invents a device that does not exist.
+// literal placeholder rather than omitting it.
 const REDUCED_UA_MODEL = 'K'
-
-const CHROMIUM_ENGINE = 'Blink'
 
 // GREASE tables from Chromium's GetGreasedUserAgentBrandVersion in
 // components/embedder_support/user_agent_utils.cc
@@ -27,17 +24,24 @@ const BRAND_ORDERS = [
   [2, 1, 0]
 ]
 
-const greaseBrandVersion = seed => {
-  const prefix = GREASE_CHARS[seed % GREASE_CHARS.length]
-  const infix = GREASE_CHARS[(seed + 1) % GREASE_CHARS.length]
-  const version = GREASE_VERSIONS[seed % GREASE_VERSIONS.length]
+const FORM_FACTORS = { mobile: 'Mobile', tablet: 'Tablet' }
 
-  return {
-    brand: `Not${prefix}A${infix}Brand`,
-    version,
-    fullVersion: `${version}.0.0.0`
-  }
+const OFFICIAL_BRANDS = {
+  Chrome: 'Google Chrome',
+  Edge: 'Microsoft Edge',
+  Firefox: 'Mozilla Firefox'
 }
+
+const ARM = /arm|aarch64/
+const X86 = /x86|i686|i386|amd64|x64/
+const SIXTY_FOUR_BIT = /arm64|aarch64|x86_64|amd64|win64|x64/
+
+const greaseBrandVersion = seed => ({
+  brand: `Not${GREASE_CHARS[seed % GREASE_CHARS.length]}A${
+    GREASE_CHARS[(seed + 1) % GREASE_CHARS.length]
+  }Brand`,
+  fullVersion: `${GREASE_VERSIONS[seed % GREASE_VERSIONS.length]}.0.0.0`
+})
 
 const generateBrandVersionList = (
   seed,
@@ -48,80 +52,59 @@ const generateBrandVersionList = (
   const order = BRAND_ORDERS[seed % BRAND_ORDERS.length]
 
   const grease = greaseBrandVersion(seed)
-  const chromium = {
-    brand: 'Chromium',
-    version: majorVersion(chromiumFullVersion),
-    fullVersion: chromiumFullVersion
-  }
+  const chromium = { brand: 'Chromium', fullVersion: chromiumFullVersion }
 
   const brandList = []
 
   if (brand) {
     brandList[order[0]] = grease
     brandList[order[1]] = chromium
-    brandList[order[2]] = {
-      brand,
-      version: majorVersion(brandFullVersion),
-      fullVersion: brandFullVersion
-    }
+    brandList[order[2]] = { brand, fullVersion: brandFullVersion }
   } else {
     brandList[seed % 2] = grease
     brandList[(seed + 1) % 2] = chromium
   }
 
-  return brandList.filter(Boolean)
+  return brandList
 }
 
-const getArchAndBitness = userAgent => {
-  const uaLower = userAgent.toLowerCase()
-  // ARM is matched first: Windows on ARM reports `Win64; ARM64`, so the x86
-  // patterns would otherwise claim it.
-  if (/arm64|aarch64/.test(uaLower)) return { arch: 'arm', bitness: '64' }
-  if (/arm/.test(uaLower)) return { arch: 'arm', bitness: '32' }
-  if (/x86_64|amd64|win64|x64/.test(uaLower)) { return { arch: 'x86', bitness: '64' } }
-  if (/i686|i386|win32|x86/.test(uaLower)) return { arch: 'x86', bitness: '32' }
-  return { arch: '', bitness: '' }
-}
+const serializeBrands = (brandList, versionOf) =>
+  brandList
+    .map(
+      ({ brand, fullVersion }) =>
+        `${quote(brand)};v=${quote(versionOf(fullVersion))}`
+    )
+    .join(', ')
 
-const brandsMap = {
-  Chrome: 'Google Chrome',
-  'Mobile Chrome': 'Google Chrome',
-  Chromium: 'Chromium',
-  'Mobile Chromium': 'Chromium',
-  Edge: 'Microsoft Edge',
-  Opera: 'Opera',
-  Firefox: 'Mozilla Firefox',
-  Safari: 'Safari'
+const getArchAndBitness = uaLower => {
+  const arch = ARM.test(uaLower) ? 'arm' : X86.test(uaLower) ? 'x86' : ''
+  if (!arch) return { arch: '', bitness: '' }
+  return { arch, bitness: SIXTY_FOUR_BIT.test(uaLower) ? '64' : '32' }
 }
 
 module.exports = userAgent => {
   const parser = new UAParser(userAgent)
-  const { name: browserBrand = '', version: browserFullVersion = '' } =
+  const { name: browserName = '', version: browserFullVersion = '' } =
     parser.getBrowser()
   const { name: engine = '', version: engineFullVersion = '' } =
     parser.getEngine()
   const { name: platform = '', version: platformVersion = '' } = parser.getOS()
   const { model = '', type: deviceType = '' } = parser.getDevice()
 
-  const isPhone = deviceType === 'mobile'
-  const isTablet = deviceType === 'tablet'
+  const uaLower = userAgent.toLowerCase()
+  const formFactor = FORM_FACTORS[deviceType] || 'Desktop'
+
+  // ua-parser-js prefixes mobile builds with `Mobile`, but a browser brands
+  // itself the same on every platform.
+  const browserBrand = browserName.replace(/^Mobile /, '')
+  const officialBrand = OFFICIAL_BRANDS[browserBrand] || browserBrand
 
   // Chromium embedders report their own version as the browser version (Opera
   // 106) while the Chromium brand and the GREASE seed follow Blink (120).
   const chromiumFullVersion =
-    engine === CHROMIUM_ENGINE && engineFullVersion
+    engine === 'Blink' && engineFullVersion
       ? engineFullVersion
       : browserFullVersion
-
-  const { arch, bitness } = getArchAndBitness(userAgent)
-  const wow64 = userAgent.toLowerCase().includes('wow64') ? '?1' : '?0'
-  const formFactors = isPhone
-    ? '["Mobile"]'
-    : isTablet
-      ? '["Tablet"]'
-      : '["Desktop"]'
-
-  const officialBrand = brandsMap[browserBrand] || browserBrand || undefined
 
   const seed = parseInt(majorVersion(chromiumFullVersion), 10) || 0
   const brandList = generateBrandVersionList(
@@ -131,17 +114,21 @@ module.exports = userAgent => {
     chromiumFullVersion
   )
 
+  const { arch, bitness } = getArchAndBitness(uaLower)
+
+  // Desktop user agents parse as model `Macintosh`, which no browser sends.
+  const deviceModel =
+    formFactor !== 'Desktop' && model !== REDUCED_UA_MODEL ? model : ''
+
   const hints = {}
 
   if (brandList.length) {
-    hints['sec-ch-ua'] = brandList
-      .map(({ brand, version }) => `${quote(brand)};v=${quote(version)}`)
-      .join(', ')
+    hints['sec-ch-ua'] = serializeBrands(brandList, majorVersion)
   }
 
-  // Chromium sends `?1` for phones only; tablets get `?0` plus the Tablet form
-  // factor, which is how phone and tablet are told apart after UA reduction.
-  hints['sec-ch-ua-mobile'] = isPhone ? '?1' : '?0'
+  // Tablets are `?0`: the form factor is what tells them apart from phones
+  // once the User-Agent has been reduced.
+  hints['sec-ch-ua-mobile'] = formFactor === 'Mobile' ? '?1' : '?0'
 
   if (platform) {
     hints['sec-ch-ua-platform'] = quote(platform)
@@ -159,24 +146,20 @@ module.exports = userAgent => {
     hints['sec-ch-ua-bitness'] = quote(bitness)
   }
 
-  // The model hint only exists for phones and tablets: desktop macOS UAs parse
-  // as model `Macintosh`, which no browser ever sends.
-  if (model && model !== REDUCED_UA_MODEL && (isPhone || isTablet)) {
-    hints['sec-ch-ua-model'] = quote(model)
+  if (deviceModel) {
+    hints['sec-ch-ua-model'] = quote(deviceModel)
   }
 
   if (browserFullVersion) {
     hints['sec-ch-ua-full-version'] = quote(browserFullVersion)
-
-    hints['sec-ch-ua-full-version-list'] = brandList
-      .map(
-        ({ brand, fullVersion }) => `${quote(brand)};v=${quote(fullVersion)}`
-      )
-      .join(', ')
+    hints['sec-ch-ua-full-version-list'] = serializeBrands(
+      brandList,
+      fullVersion => fullVersion
+    )
   }
 
-  hints['sec-ch-ua-wow64'] = wow64
-  hints['sec-ch-ua-form-factors'] = formFactors
+  hints['sec-ch-ua-wow64'] = uaLower.includes('wow64') ? '?1' : '?0'
+  hints['sec-ch-ua-form-factors'] = JSON.stringify([formFactor])
 
   return hints
 }
