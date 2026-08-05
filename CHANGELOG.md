@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### 1.0.6 (2026-08-05)
+
+
+### Bug Fixes
+
+* harden UA input handling and HeadlessChrome brand ([#17](https://github.com/kikobeats/ua-hints/issues/17)) ([f172b81](https://github.com/kikobeats/ua-hints/commit/f172b818fc6f5ac1ce8e6693507bf795639ffb40))
+
 ### 1.0.5 (2026-08-03)
 
 ### 1.0.4 (2026-08-02)
