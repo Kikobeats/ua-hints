@@ -29,7 +29,10 @@ const FORM_FACTORS = { mobile: 'Mobile', tablet: 'Tablet' }
 const OFFICIAL_BRANDS = {
   Chrome: 'Google Chrome',
   Edge: 'Microsoft Edge',
-  Firefox: 'Mozilla Firefox'
+  Firefox: 'Mozilla Firefox',
+  // ua-parser-js names this "Chrome Headless"; Chromium's brand token is
+  // the single word HeadlessChrome (old headless / chrome-headless-shell).
+  'Chrome Headless': 'HeadlessChrome'
 }
 
 const ARM = /arm|aarch64/
@@ -76,6 +79,10 @@ const getArchAndBitness = uaLower => {
 }
 
 module.exports = userAgent => {
+  // Missing / non-string UAs are common (absent User-Agent header). Treat them
+  // like an empty string instead of throwing on `.toLowerCase()`.
+  if (typeof userAgent !== 'string') userAgent = ''
+
   const parser = new UAParser(userAgent)
   const { name: browserName = '', version: browserFullVersion = '' } =
     parser.getBrowser()
