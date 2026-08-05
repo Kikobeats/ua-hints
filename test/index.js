@@ -203,25 +203,19 @@ test('does not seed GREASE with a non Blink engine version', t => {
 })
 
 test('an unparseable user agent yields no versioned hints', t => {
-  const headers = uaHints('')
-
-  t.is(headers['sec-ch-ua-mobile'], '?0')
-  t.is(headers['sec-ch-ua-form-factors'], '["Desktop"]')
-  t.false('sec-ch-ua' in headers)
-  t.false('sec-ch-ua-full-version' in headers)
-  t.false('sec-ch-ua-full-version-list' in headers)
-})
-
-test('missing or non-string user agents do not throw', t => {
-  for (const input of [undefined, null, 123, {}, []]) {
+  for (const input of ['', undefined, null, 123, {}, []]) {
     const headers = uaHints(input)
-    t.is(headers['sec-ch-ua-mobile'], '?0', String(input))
-    t.is(headers['sec-ch-ua-form-factors'], '["Desktop"]', String(input))
-    t.false('sec-ch-ua' in headers, String(input))
+    const label = String(input)
+
+    t.is(headers['sec-ch-ua-mobile'], '?0', label)
+    t.is(headers['sec-ch-ua-form-factors'], '["Desktop"]', label)
+    t.false('sec-ch-ua' in headers, label)
+    t.false('sec-ch-ua-full-version' in headers, label)
+    t.false('sec-ch-ua-full-version-list' in headers, label)
   }
 })
 
-test('brands HeadlessChrome with Chromium\'s brand token', t => {
+test("brands HeadlessChrome with Chromium's brand token", t => {
   const headers = uaHints(
     'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/131.0.6778.85 Safari/537.36'
   )
@@ -231,5 +225,4 @@ test('brands HeadlessChrome with Chromium\'s brand token', t => {
     '"HeadlessChrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"'
   )
   t.is(headers['sec-ch-ua-full-version'], '"131.0.6778.85"')
-  t.false(headers['sec-ch-ua'].includes('Chrome Headless'))
 })
