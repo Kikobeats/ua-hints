@@ -29,7 +29,8 @@ const FORM_FACTORS = { mobile: 'Mobile', tablet: 'Tablet' }
 const OFFICIAL_BRANDS = {
   Chrome: 'Google Chrome',
   Edge: 'Microsoft Edge',
-  Firefox: 'Mozilla Firefox'
+  Firefox: 'Mozilla Firefox',
+  'Chrome Headless': 'HeadlessChrome'
 }
 
 const ARM = /arm|aarch64/
@@ -75,7 +76,9 @@ const getArchAndBitness = uaLower => {
   return { arch, bitness }
 }
 
-module.exports = userAgent => {
+module.exports = input => {
+  const userAgent = typeof input === 'string' ? input : ''
+
   const parser = new UAParser(userAgent)
   const { name: browserName = '', version: browserFullVersion = '' } =
     parser.getBrowser()
