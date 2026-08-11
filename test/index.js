@@ -226,3 +226,22 @@ test("brands HeadlessChrome with Chromium's brand token", t => {
   )
   t.is(headers['sec-ch-ua-full-version'], '"131.0.6778.85"')
 })
+
+test('Chromium-only builds emit GREASE + Chromium, not a duplicate brand', t => {
+  const headers = uaHints(
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chromium/120.0.6099.109 Chrome/120.0.6099.109 Safari/537.36'
+  )
+
+  t.is(headers['sec-ch-ua'], '"Not_A Brand";v="8", "Chromium";v="120"')
+  t.is(
+    headers['sec-ch-ua-full-version-list'],
+    '"Not_A Brand";v="8.0.0.0", "Chromium";v="120.0.6099.109"'
+  )
+
+  t.is(
+    uaHints(
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chromium/131.0.6778.85 Chrome/131.0.6778.85 Safari/537.36'
+    )['sec-ch-ua'],
+    '"Chromium";v="131", "Not_A Brand";v="24"'
+  )
+})
