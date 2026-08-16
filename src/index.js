@@ -52,6 +52,16 @@ const generateBrandVersionList = (
   if (!brand) return []
 
   const seed = parseInt(chromiumFullVersion, 10) || 0
+
+  // Chromium-branded builds leave the additional product brand unset and emit
+  // only GREASE + Chromium (see GenerateBrandVersionList's `else` branch).
+  // Treating "Chromium" as a third brand duplicates it and breaks fingerprinting.
+  if (brand === 'Chromium') {
+    const grease = greaseBrandVersion(seed)
+    const chromium = { brand: 'Chromium', fullVersion: chromiumFullVersion }
+    return seed % 2 === 0 ? [grease, chromium] : [chromium, grease]
+  }
+
   const order = BRAND_ORDERS[seed % BRAND_ORDERS.length]
 
   const brandList = []
