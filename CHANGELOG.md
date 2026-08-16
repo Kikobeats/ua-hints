@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### 1.0.7 (2026-08-16)
+
+
+### Bug Fixes
+
+* emit two-brand list for Chromium-only UAs ([#18](https://github.com/kikobeats/ua-hints/issues/18)) ([6013e30](https://github.com/kikobeats/ua-hints/commit/6013e3096f8473162df81d0127f7d0fd69bb8933))
+
 ### 1.0.6 (2026-08-05)
 
 
