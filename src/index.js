@@ -57,13 +57,9 @@ const generateBrandVersionList = (
   // only GREASE + Chromium (see GenerateBrandVersionList's `else` branch).
   // Treating "Chromium" as a third brand duplicates it and breaks fingerprinting.
   if (brand === 'Chromium') {
-    const brandList = []
-    brandList[seed % 2] = greaseBrandVersion(seed)
-    brandList[(seed + 1) % 2] = {
-      brand: 'Chromium',
-      fullVersion: chromiumFullVersion
-    }
-    return brandList
+    const grease = greaseBrandVersion(seed)
+    const chromium = { brand: 'Chromium', fullVersion: chromiumFullVersion }
+    return seed % 2 === 0 ? [grease, chromium] : [chromium, grease]
   }
 
   const order = BRAND_ORDERS[seed % BRAND_ORDERS.length]
