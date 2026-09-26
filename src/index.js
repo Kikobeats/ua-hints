@@ -29,7 +29,6 @@ const FORM_FACTORS = { mobile: 'Mobile', tablet: 'Tablet' }
 const OFFICIAL_BRANDS = {
   Chrome: 'Google Chrome',
   Edge: 'Microsoft Edge',
-  Firefox: 'Mozilla Firefox',
   'Chrome Headless': 'HeadlessChrome'
 }
 
@@ -90,10 +89,15 @@ module.exports = input => {
   const userAgent = typeof input === 'string' ? input : ''
 
   const parser = new UAParser(userAgent)
-  const { name: browserName = '', version: browserFullVersion = '' } =
-    parser.getBrowser()
   const { name: engine = '', version: engineFullVersion = '' } =
     parser.getEngine()
+
+  // User-Agent Client Hints are a Chromium feature. Firefox, Safari, and
+  // other non-Blink browsers send none of these headers.
+  if (engine && engine !== 'Blink') return {}
+
+  const { name: browserName = '', version: browserFullVersion = '' } =
+    parser.getBrowser()
   const { name: platform = '', version: platformVersion = '' } = parser.getOS()
   const { model = '', type: deviceType = '' } = parser.getDevice()
 
@@ -107,10 +111,7 @@ module.exports = input => {
 
   // Chromium embedders report their own version as the browser version (Opera
   // 106) while the Chromium brand and the GREASE seed follow Blink (120).
-  const chromiumFullVersion =
-    engine === 'Blink' && engineFullVersion
-      ? engineFullVersion
-      : browserFullVersion
+  const chromiumFullVersion = engineFullVersion || browserFullVersion
 
   const brandList = generateBrandVersionList(
     officialBrand,
