@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### 1.0.8 (2026-09-26)
+
+
+### Bug Fixes
+
+* omit client hints for Firefox and Safari ([#20](https://github.com/kikobeats/ua-hints/issues/20)) ([68763e2](https://github.com/kikobeats/ua-hints/commit/68763e2d65222e13f214cb15bb4a3282293c4f20)), closes [#19](https://github.com/kikobeats/ua-hints/issues/19)
+
 ### 1.0.7 (2026-08-16)
 
 
