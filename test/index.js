@@ -103,16 +103,18 @@ test('brands Android Chrome as Google Chrome', t => {
   t.is(headers['sec-ch-ua-form-factors'], '["Mobile"]')
 })
 
-test('mobile builds keep the desktop brand name', t => {
-  const safari = uaHints(
-    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
-  )
-  const firefox = uaHints(
-    'Mozilla/5.0 (Android 13; Mobile; rv:121.0) Gecko/121.0 Firefox/121.0'
-  )
+test('non-Blink browsers emit no client hints', t => {
+  const userAgents = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+    'Mozilla/5.0 (Android 13; Mobile; rv:121.0) Gecko/121.0 Firefox/121.0',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/120.0.6099.119 Mobile/15E148 Safari/604.1'
+  ]
 
-  t.true(safari['sec-ch-ua'].includes('"Safari";v="17"'))
-  t.true(firefox['sec-ch-ua'].includes('"Mozilla Firefox";v="121"'))
+  for (const userAgent of userAgents) {
+    t.deepEqual(uaHints(userAgent), {}, userAgent)
+  }
 })
 
 test('embedders keep their own version while Chromium follows Blink', t => {
@@ -188,18 +190,6 @@ test('tablets are not mobile and report the Tablet form factor', t => {
   t.is(headers['sec-ch-ua-mobile'], '?0')
   t.is(headers['sec-ch-ua-form-factors'], '["Tablet"]')
   t.is(headers['sec-ch-ua-model'], '"Pixel Tablet"')
-})
-
-test('does not seed GREASE with a non Blink engine version', t => {
-  const headers = uaHints(
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15'
-  )
-
-  // Seeded with Safari 17, not with the WebKit 605 engine version.
-  t.is(
-    headers['sec-ch-ua'],
-    '"Safari";v="17", "Chromium";v="17", "Not)A;Brand";v="24"'
-  )
 })
 
 test('an unparseable user agent yields no versioned hints', t => {
