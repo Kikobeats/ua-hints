@@ -217,6 +217,34 @@ test("brands HeadlessChrome with Chromium's brand token", t => {
   t.is(headers['sec-ch-ua-full-version'], '"131.0.6778.85"')
 })
 
+test('negative parsed versions do not crash GREASE seeding', t => {
+  for (const userAgent of [
+    'Vivaldi/-1',
+    'Whale/-1.0.0.0',
+    'Silk/-5',
+    'DuckDuckGo/-1',
+    'Chromium/-1',
+    'Mozilla/5.0 Vivaldi/-1'
+  ]) {
+    const headers = uaHints(userAgent)
+    t.false(headers['sec-ch-ua'].includes('undefined'), userAgent)
+    t.false(
+      headers['sec-ch-ua-full-version-list'].includes('undefined'),
+      userAgent
+    )
+  }
+
+  // Seed 0 uses GREASE chars ` ` / `(` and version `8`, and order [0, 1, 2].
+  t.is(
+    uaHints('Vivaldi/-1')['sec-ch-ua'],
+    '"Not A(Brand";v="8", "Chromium";v="-1", "Vivaldi";v="-1"'
+  )
+  t.is(
+    uaHints('Chromium/-1')['sec-ch-ua'],
+    '"Not A(Brand";v="8", "Chromium";v="-1"'
+  )
+})
+
 test('Chromium-only builds emit GREASE + Chromium, not a duplicate brand', t => {
   const headers = uaHints(
     'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chromium/120.0.6099.109 Chrome/120.0.6099.109 Safari/537.36'
