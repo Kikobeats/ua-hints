@@ -1,8 +1,8 @@
 # ua-hints
 
-![Last version](https://img.shields.io/github/tag/kikobeats/ua-hints.svg?style=flat-square)
-[![Coverage Status](https://img.shields.io/coveralls/kikobeats/ua-hints.svg?style=flat-square)](https://coveralls.io/github/kikobeats/ua-hints)
-[![NPM Status](https://img.shields.io/npm/dm/ua-hints.svg?style=flat-square)](https://www.npmjs.org/package/ua-hints)
+[![Last version](https://img.shields.io/github/v/tag/Kikobeats/ua-hints?style=flat-square)](https://github.com/Kikobeats/ua-hints/releases)
+[![Coverage Status](https://img.shields.io/coverallsCoverage/github/Kikobeats/ua-hints?style=flat-square)](https://coveralls.io/github/Kikobeats/ua-hints)
+[![NPM Status](https://img.shields.io/npm/dm/ua-hints?style=flat-square)](https://www.npmjs.com/package/ua-hints)
 
 > It generates [Sec-CH-UA-*](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers#user_agent_client_hints) headers for the provided `'user-agent'`.
 
