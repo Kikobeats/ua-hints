@@ -226,11 +226,10 @@ test('negative parsed versions do not crash GREASE seeding', t => {
     'Chromium/-1',
     'Mozilla/5.0 Vivaldi/-1'
   ]) {
-    t.notThrows(() => uaHints(userAgent), userAgent)
     const headers = uaHints(userAgent)
-    t.false((headers['sec-ch-ua'] || '').includes('undefined'), userAgent)
+    t.false(headers['sec-ch-ua'].includes('undefined'), userAgent)
     t.false(
-      (headers['sec-ch-ua-full-version-list'] || '').includes('undefined'),
+      headers['sec-ch-ua-full-version-list'].includes('undefined'),
       userAgent
     )
   }
