@@ -245,6 +245,39 @@ test('negative parsed versions do not crash GREASE seeding', t => {
   )
 })
 
+test('non-finite parsed versions do not crash GREASE seeding', t => {
+  // parseInt of 310+ digit majors is Infinity; Infinity % n is NaN, so
+  // BRAND_ORDERS[NaN] threw and Chromium-only GREASE emitted "undefined".
+  const overflow = '1'.repeat(400)
+
+  for (const userAgent of [
+    `Chrome/${overflow}`,
+    `Vivaldi/${overflow}`,
+    `Whale/${overflow}`,
+    `Silk/${overflow}`,
+    `Chromium/${overflow}`,
+    `HeadlessChrome/${overflow}`,
+    chromeUA('Windows NT 10.0; Win64; x64', `${overflow}.0.0.0`)
+  ]) {
+    const headers = uaHints(userAgent)
+    t.false(headers['sec-ch-ua'].includes('undefined'), userAgent)
+    t.false(
+      headers['sec-ch-ua-full-version-list'].includes('undefined'),
+      userAgent
+    )
+  }
+
+  // Seed 0 uses GREASE chars ` ` / `(` and version `8`, and order [0, 1, 2].
+  t.is(
+    uaHints(`Chrome/${overflow}`)['sec-ch-ua'],
+    `"Not A(Brand";v="8", "Chromium";v="${overflow}", "Google Chrome";v="${overflow}"`
+  )
+  t.is(
+    uaHints(`Chromium/${overflow}`)['sec-ch-ua'],
+    `"Not A(Brand";v="8", "Chromium";v="${overflow}"`
+  )
+})
+
 test('Chromium-only builds emit GREASE + Chromium, not a duplicate brand', t => {
   const headers = uaHints(
     'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chromium/120.0.6099.109 Chrome/120.0.6099.109 Safari/537.36'

@@ -50,9 +50,10 @@ const generateBrandVersionList = (
 ) => {
   if (!brand) return []
 
-  // Negative versions are truthy (`-1 || 0 === -1`) and JS `%` is signed,
-  // so they would index `BRAND_ORDERS[-1]` / `GREASE_CHARS[-1]`.
-  const seed = Math.max(0, parseInt(chromiumFullVersion, 10) || 0)
+  // `-1 || 0` stays `-1` (truthy) and `Infinity % n` is `NaN`, so either
+  // value would index `BRAND_ORDERS` / `GREASE_CHARS` with `undefined`.
+  const parsed = parseInt(chromiumFullVersion, 10)
+  const seed = Number.isFinite(parsed) ? Math.max(0, parsed) : 0
 
   // Chromium-branded builds leave the additional product brand unset and emit
   // only GREASE + Chromium (see GenerateBrandVersionList's `else` branch).
