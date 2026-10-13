@@ -50,8 +50,8 @@ const generateBrandVersionList = (
 ) => {
   if (!brand) return []
 
-  // `-1 || 0` stays `-1` (truthy) and `Infinity % n` is `NaN`, so either
-  // value would index `BRAND_ORDERS` / `GREASE_CHARS` with `undefined`.
+  // A negative major is finite and JS `%` is signed (`BRAND_ORDERS[-1]`).
+  // `Infinity % n` is `NaN`, so that index is `undefined`. Both become 0.
   const parsed = parseInt(chromiumFullVersion, 10)
   const seed = Number.isFinite(parsed) ? Math.max(0, parsed) : 0
 
