@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### 1.0.11 (2026-10-13)
+
+
+### Bug Fixes
+
+* clamp non-finite GREASE seeds so overflow UA versions do not crash ([#22](https://github.com/kikobeats/ua-hints/issues/22)) ([47c58ee](https://github.com/kikobeats/ua-hints/commit/47c58ee379a64b69091ddc369bc9278e11266fe4))
+
 ### 1.0.10 (2026-10-09)
 
 
