@@ -296,3 +296,17 @@ test('Chromium-only builds emit GREASE + Chromium, not a duplicate brand', t => 
     '"Chromium";v="131", "Not_A Brand";v="24"'
   )
 })
+
+test('repeated calls return independent objects', t => {
+  const first = uaHints(CHROME_120_WINDOWS)
+  first['sec-ch-ua'] = 'mutated'
+  delete first['sec-ch-ua-mobile']
+
+  const second = uaHints(CHROME_120_WINDOWS)
+  t.not(second, first)
+  t.is(
+    second['sec-ch-ua'],
+    '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"'
+  )
+  t.is(second['sec-ch-ua-mobile'], '?0')
+})
