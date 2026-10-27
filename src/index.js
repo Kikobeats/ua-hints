@@ -32,6 +32,8 @@ const OFFICIAL_BRANDS = {
   'Chrome Headless': 'HeadlessChrome'
 }
 
+const CACHE_SIZE = 1000
+
 const ARM = /arm|aarch64/
 const X86 = /x86|i686|i386|amd64|x64/
 const SIXTY_FOUR_BIT = /arm64|aarch64|x86_64|amd64|win64|x64/
@@ -88,9 +90,7 @@ const getArchAndBitness = uaLower => {
   return { arch, bitness }
 }
 
-module.exports = input => {
-  const userAgent = typeof input === 'string' ? input : ''
-
+const getHints = userAgent => {
   const parser = new UAParser(userAgent)
   const { name: engine = '', version: engineFullVersion = '' } =
     parser.getEngine()
@@ -167,4 +167,21 @@ module.exports = input => {
   hints['sec-ch-ua-form-factors'] = JSON.stringify([formFactor])
 
   return hints
+}
+
+const cache = new Map()
+
+module.exports = input => {
+  const userAgent = typeof input === 'string' ? input : ''
+
+  let hints = cache.get(userAgent)
+  if (hints) {
+    cache.delete(userAgent)
+  } else {
+    hints = getHints(userAgent)
+    if (cache.size === CACHE_SIZE) cache.delete(cache.keys().next().value)
+  }
+  cache.set(userAgent, hints)
+
+  return { ...hints }
 }
