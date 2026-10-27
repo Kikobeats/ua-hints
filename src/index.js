@@ -175,7 +175,8 @@ module.exports = input => {
   const userAgent = typeof input === 'string' ? input : ''
 
   let hints = cache.get(userAgent)
-  if (hints) {
+  if (hints !== undefined) {
+    // Reinsert the hit so it becomes the newest entry.
     cache.delete(userAgent)
   } else {
     hints = getHints(userAgent)
