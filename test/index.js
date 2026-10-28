@@ -148,9 +148,10 @@ test('brands Edge as Microsoft Edge', t => {
 })
 
 test('detects architecture and bitness', t => {
-  // Windows on ARM reports both Win64 and ARM64; only the latter is the arch.
+  // Windows on ARM reports Win64 and often x64 as well. ARM64 is the arch.
   const architectures = [
     ['Windows NT 10.0; Win64; ARM64', '"arm"', '"64"'],
+    ['Windows NT 10.0; Win64; x64; ARM64', '"arm"', '"64"'],
     ['Windows NT 10.0; Win64; x64', '"x86"', '"64"'],
     ['Windows NT 10.0; Win64; x86', '"x86"', '"32"'],
     ['Windows NT 10.0; Win64; i686', '"x86"', '"32"'],
