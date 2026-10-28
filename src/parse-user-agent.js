@@ -91,7 +91,9 @@ const LINUX = /\bLinux\b/i
 // `match[0]` keeps the caller's casing. Hints use Chromium's names.
 const BSD_PLATFORM = { free: 'FreeBSD', open: 'OpenBSD', net: 'NetBSD' }
 
-const APPLE_DEVICE = /\((iPhone|iPad|iPod)/i
+// Same field boundary as the iOS platform, so a device at the start of the
+// string or after `;` still has a model. A product like `MyApp-iPhone` does not.
+const APPLE_DEVICE = /(?:^|[(;] ?)(iPhone|iPad|iPod)\b/i
 // The device field follows the Android version. Skip a `U;` marker, a locale
 // (`zh-CN`, `zh_CN`, `es-419`), `HarmonyOS`, and Samsung's vendor prefix.
 // A later `Build/` or `HMSCore/` token is firmware, not the device name.

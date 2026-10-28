@@ -912,6 +912,35 @@ test('an Apple device without an OS version is still iOS', t => {
   }
 })
 
+test('reads an Apple device at the start of the string and after a semicolon', t => {
+  const tail =
+    ' AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
+  const cases = [
+    [
+      `iPhone; CPU iPhone OS 17_0 like Mac OS X)${tail}`,
+      '"iPhone"',
+      '["Mobile"]',
+      '?1'
+    ],
+    [`iPad; CPU OS 17_0 like Mac OS X)${tail}`, '"iPad"', '["Tablet"]', '?0'],
+    [
+      `; iPod; CPU iPhone OS 17_0 like Mac OS X)${tail}`,
+      '"iPod"',
+      '["Mobile"]',
+      '?1'
+    ]
+  ]
+
+  for (const [userAgent, model, formFactor, mobile] of cases) {
+    const headers = uaHints(userAgent)
+    t.is(headers['sec-ch-ua-platform'], '"iOS"', userAgent)
+    t.is(headers['sec-ch-ua-platform-version'], '"17.0"', userAgent)
+    t.is(headers['sec-ch-ua-model'], model, userAgent)
+    t.is(headers['sec-ch-ua-form-factors'], formFactor, userAgent)
+    t.is(headers['sec-ch-ua-mobile'], mobile, userAgent)
+  }
+})
+
 test('reads Android at the start of the string and after an opening parenthesis', t => {
   const atStart =
     'Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
