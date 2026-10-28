@@ -872,6 +872,26 @@ test('iPod is a phone', t => {
   t.is(headers['sec-ch-ua-form-factors'], '["Mobile"]')
 })
 
+test('an Apple device without an OS version is still iOS', t => {
+  const cases = [
+    ['iPhone; CPU iPhone OS like Mac OS X', '"iPhone"', '["Mobile"]'],
+    ['iPad; CPU OS like Mac OS X', '"iPad"', '["Tablet"]'],
+    ['iPod; CPU iPhone OS like Mac OS X', '"iPod"', '["Mobile"]'],
+    ['iPhone', '"iPhone"', '["Mobile"]'],
+    ['iPad', '"iPad"', '["Tablet"]']
+  ]
+
+  for (const [platform, model, formFactor] of cases) {
+    const headers = uaHints(
+      chromeUA(platform, '120.0.0.0', 'Mobile Safari/537.36')
+    )
+    t.is(headers['sec-ch-ua-platform'], '"iOS"', platform)
+    t.false('sec-ch-ua-platform-version' in headers, platform)
+    t.is(headers['sec-ch-ua-model'], model, platform)
+    t.is(headers['sec-ch-ua-form-factors'], formFactor, platform)
+  }
+})
+
 test('reads Android at the start of the string and after an opening parenthesis', t => {
   const atStart =
     'Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'

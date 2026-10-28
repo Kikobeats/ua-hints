@@ -77,7 +77,8 @@ const WINDOWS = /\bWindows NT(?![A-Za-z]) ?(\d+(?:\.\d+)?)?/i
 const HARMONY = /(?:^|[(;] ?)HarmonyOS\b/i
 const ANDROID = /(?:^|[(;] ?)Android\b(?: ([\d.]+))?/i
 const CHROME_OS = /\bCrOS \S+ ([\d.]+)/i
-const IOS = /\b(?:iPhone|iPad|iPod)\b.*?\bi?OS ([\d_.]+)/i
+// The version is optional. Without that token, `like Mac OS X` would make an iPhone macOS.
+const IOS = /\b(?:iPhone|iPad|iPod)\b(?:.*?\bi?OS(?: ([\d_.]+))?)?/i
 const BSD = /\b(Free|Open|Net)BSD\b/i
 const MAC_OS = /\bMac OS X\b(?: ([\d_.]+))?/i
 const CFNETWORK = /\bCFNetwork\//i
