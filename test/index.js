@@ -758,9 +758,23 @@ test('a locale is not the device model', t => {
   t.is(modelOf('Mozilla/5.0 (Linux; Android 10; zh_CN)'), undefined)
   t.is(modelOf('Mozilla/5.0 (Linux; Android 10; es-419)'), undefined)
   t.is(modelOf('Mozilla/5.0 (Linux; Android 10; zh-Hans-CN)'), undefined)
+  t.is(modelOf('Mozilla/5.0 (Linux; Android 10; zh_Hans_CN)'), undefined)
+  t.is(modelOf('Mozilla/5.0 (Linux; Android 10; fil-PH)'), undefined)
   t.is(
     modelOf(
       'Mozilla/5.0 (Linux; Android 10; zh-Hans-CN; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
+    ),
+    '"Pixel 8"'
+  )
+  t.is(
+    modelOf(
+      'Mozilla/5.0 (Linux; Android 10; zh_Hans_CN; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
+    ),
+    '"Pixel 8"'
+  )
+  t.is(
+    modelOf(
+      'Mozilla/5.0 (Linux; Android 10; fil-PH; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
     ),
     '"Pixel 8"'
   )
