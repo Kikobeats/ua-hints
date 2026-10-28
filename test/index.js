@@ -488,6 +488,31 @@ test('matches tokens regardless of case', t => {
   t.is(headers['sec-ch-ua-platform'], '"Windows"')
 })
 
+test('detects the form factor regardless of case', t => {
+  const cases = [
+    [chromeUA('iPad; CPU OS 17_0 like Mac OS X'), 'Tablet'],
+    [chromeUA('iPhone; CPU iPhone OS 17_0 like Mac OS X'), 'Mobile'],
+    [chromeUA('Linux; Android 14; SM-X910'), 'Tablet'],
+    [
+      'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+      'Mobile'
+    ]
+  ]
+
+  for (const [userAgent, formFactor] of cases) {
+    t.is(
+      uaHints(userAgent.toLowerCase())['sec-ch-ua-form-factors'],
+      uaHints(userAgent)['sec-ch-ua-form-factors'],
+      userAgent
+    )
+    t.is(
+      uaHints(userAgent)['sec-ch-ua-form-factors'],
+      JSON.stringify([formFactor]),
+      userAgent
+    )
+  }
+})
+
 test('detects the platform and its version', t => {
   const cases = [
     [chromeUA('Windows NT 6.1; Win64; x64'), 'Windows', '7'],

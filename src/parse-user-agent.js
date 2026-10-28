@@ -80,11 +80,11 @@ const IOS = /\b(?:iPhone|iPad|iPod)\b.*?\bi?OS ([\d_.]+)/i
 const BSD = /\b(?:Free|Open|Net)BSD\b/
 const MAC_OS = /Mac OS X(?: ([\d_.]+))?/i
 
-const APPLE_DEVICE = /\((iPhone|iPad|iPod)/
+const APPLE_DEVICE = /\((iPhone|iPad|iPod)/i
 const ANDROID_MODEL =
   /(?:^|[(;] ?)Android\b[^;)]*;(?: U;)?(?: [a-z]{2}[-_][a-z]{2};)?(?: HarmonyOS;)?(?: SAMSUNG)? ((?:[^;()/]|\([^;()/]*\))+?)(?: [^\s;()]*\/[^;)]*)?[;)]/i
-const TABLET_SAFARI = /\/[\w.]+ Safari\//
-const MOBILE = /\bMobile\b/
+const TABLET_SAFARI = /\/[\w.]+ Safari\//i
+const MOBILE = /\bMobile\b/i
 
 const dotted = version => version && version.replace(/_/g, '.')
 
@@ -132,7 +132,10 @@ const appleDeviceOf = userAgent => {
   const match = APPLE_DEVICE.exec(userAgent)
   if (!match) return {}
   const model = match[1]
-  return { model, formFactor: model === 'iPad' ? 'Tablet' : 'Mobile' }
+  return {
+    model,
+    formFactor: model.toLowerCase() === 'ipad' ? 'Tablet' : 'Mobile'
+  }
 }
 
 const androidFormFactorOf = (userAgent, model) => {
