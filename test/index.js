@@ -684,7 +684,27 @@ test('a glued platform token is not that platform', t => {
     [chromeUA('NotCFNetwork/1209 Darwin/20.2.0'), undefined],
     ['Windows NT 10.0 Chrome/120.0.0.0', 'Windows'],
     ['Mac OS X 14_6 Chrome/120.0.0.0', 'macOS'],
-    ['CFNetwork/1209 Chrome/120.0.0.0', 'iOS']
+    ['CFNetwork/1209 Chrome/120.0.0.0', 'iOS'],
+    [
+      chromeUA(
+        'Macintosh; Intel Mac OS X 10_15_7',
+        '120.0.0.0',
+        'Safari/537.36 MyApp-iPhone/1.0'
+      ),
+      'macOS'
+    ],
+    [
+      chromeUA(
+        'X11; Linux x86_64',
+        '120.0.0.0',
+        'Safari/537.36 MyApp-iPod/1.0'
+      ),
+      'Linux'
+    ],
+    [
+      chromeUA('X11; Ubuntu', '120.0.0.0', 'Safari/537.36 MyApp-iPad/1.0'),
+      'Ubuntu'
+    ]
   ]
   for (const [userAgent, platform] of cases) {
     t.is(
