@@ -1,6 +1,6 @@
 'use strict'
 
-const UAParser = require('ua-parser-js')
+const parseUserAgent = require('./parse-user-agent')
 
 const quote = value => JSON.stringify(value)
 
@@ -23,14 +23,6 @@ const BRAND_ORDERS = [
   [2, 0, 1],
   [2, 1, 0]
 ]
-
-const FORM_FACTORS = { mobile: 'Mobile', tablet: 'Tablet' }
-
-const OFFICIAL_BRANDS = {
-  Chrome: 'Google Chrome',
-  Edge: 'Microsoft Edge',
-  'Chrome Headless': 'HeadlessChrome'
-}
 
 const CACHE_SIZE = 1000
 
@@ -91,42 +83,33 @@ const getArchAndBitness = uaLower => {
 }
 
 const getHints = userAgent => {
-  const parser = new UAParser(userAgent)
-  const { name: engine = '', version: engineFullVersion = '' } =
-    parser.getEngine()
+  const userAgentData = parseUserAgent(userAgent)
 
   // User-Agent Client Hints are a Chromium feature. Firefox, Safari, and
   // other non-Blink browsers send none of these headers.
-  if (engine && engine !== 'Blink') return {}
+  if (!userAgentData) return {}
 
-  const { name: browserName = '', version: browserFullVersion = '' } =
-    parser.getBrowser()
-  const { name: platform = '', version: platformVersion = '' } = parser.getOS()
-  const { model = '', type: deviceType = '' } = parser.getDevice()
+  const {
+    brand,
+    brandFullVersion,
+    chromiumFullVersion,
+    platform,
+    platformVersion,
+    model,
+    formFactor
+  } = userAgentData
 
   const uaLower = userAgent.toLowerCase()
-  const formFactor = FORM_FACTORS[deviceType] || 'Desktop'
-
-  // ua-parser-js prefixes mobile builds with `Mobile`, but a browser brands
-  // itself the same on every platform.
-  const browserBrand = browserName.replace(/^Mobile /, '')
-  const officialBrand = OFFICIAL_BRANDS[browserBrand] || browserBrand
-
-  // Chromium embedders report their own version as the browser version (Opera
-  // 106) while the Chromium brand and the GREASE seed follow Blink (120).
-  const chromiumFullVersion = engineFullVersion || browserFullVersion
 
   const brandList = generateBrandVersionList(
-    officialBrand,
-    browserFullVersion,
+    brand,
+    brandFullVersion,
     chromiumFullVersion
   )
 
   const { arch, bitness } = getArchAndBitness(uaLower)
 
-  // Desktop user agents parse as model `Macintosh`, which no browser sends.
-  const deviceModel =
-    formFactor !== 'Desktop' && model !== REDUCED_UA_MODEL ? model : ''
+  const deviceModel = model !== REDUCED_UA_MODEL ? model : ''
 
   const hints = {}
 
@@ -158,8 +141,8 @@ const getHints = userAgent => {
     hints['sec-ch-ua-model'] = quote(deviceModel)
   }
 
-  if (browserFullVersion) {
-    hints['sec-ch-ua-full-version'] = quote(browserFullVersion)
+  if (brandFullVersion) {
+    hints['sec-ch-ua-full-version'] = quote(brandFullVersion)
     hints['sec-ch-ua-full-version-list'] = serializeBrands(brandList)
   }
 

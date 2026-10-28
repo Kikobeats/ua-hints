@@ -310,3 +310,248 @@ test('repeated calls return independent objects', t => {
   )
   t.is(second['sec-ch-ua-mobile'], '?0')
 })
+
+test('`sec-ch-ua-model` is the model exactly as the User-Agent sends it', t => {
+  for (const [platform, model] of [
+    ['Linux; Android 5.0.2; LG-D690', 'LG-D690'],
+    ['Linux; Android 12; Nokia G21 Build/SP1A.210812.016; wv', 'Nokia G21'],
+    ['Linux; Android 6.0.1; Moto G (4) Build/MPJ24.139-64', 'Moto G (4)'],
+    ['Linux; U; Android 10; zh-cn; Mi 10 Build/QKQ1.191117.002', 'Mi 10']
+  ]) {
+    const headers = uaHints(
+      chromeUA(platform, '120.0.0.0', 'Mobile Safari/537.36')
+    )
+    t.is(headers['sec-ch-ua-model'], JSON.stringify(model), platform)
+  }
+})
+
+test('Linux has no platform version', t => {
+  for (const platform of [
+    'X11; Linux x86_64',
+    'X11; Linux aarch64',
+    'X11; Linux i686'
+  ]) {
+    const headers = uaHints(chromeUA(platform))
+    t.is(headers['sec-ch-ua-platform'], '"Linux"', platform)
+    t.false('sec-ch-ua-platform-version' in headers, platform)
+  }
+})
+
+test('Internet Explorer emits no client hints', t => {
+  for (const userAgent of [
+    'Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.0)',
+    'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.18363'
+  ]) {
+    t.deepEqual(uaHints(userAgent), {}, userAgent)
+  }
+})
+
+test('names the Chromium embedder that sent the User-Agent', t => {
+  const brandOf = userAgent => {
+    const brands = uaHints(userAgent)['sec-ch-ua']
+    return brands.split(', ').map(entry => entry.split(';')[0])
+  }
+
+  for (const [userAgent, brand] of [
+    [
+      chromeUA(
+        'Linux; Android 10; K',
+        '143.0.0.0',
+        'Mobile Safari/537.36'
+      ).replace('Chrome/', 'SamsungBrowser/30.0 Chrome/'),
+      'Samsung Internet'
+    ],
+    [
+      chromeUA(
+        'Windows NT 10.0; Win64; x64',
+        '150.0.0.0',
+        'YaBrowser/26.8.0.0 Safari/537.36'
+      ),
+      'Yandex'
+    ],
+    [
+      chromeUA(
+        'Linux; Android 16; SM-S928B Build/BP4A.251205.006; wv',
+        '151.0.7922.199',
+        'Mobile Safari/537.36'
+      ),
+      'Chrome WebView'
+    ],
+    [
+      chromeUA(
+        'Linux; Android 10; K',
+        '130.0.6723.107',
+        'Mobile Safari/537.36'
+      ).replace('Chrome/', 'Version/4.0 Chrome/'),
+      'Android Browser'
+    ],
+    [
+      chromeUA(
+        'Windows NT 10.0; Win64; x64',
+        '142.0.7444.265',
+        'Electron/39.5.1 Safari/537.36'
+      ),
+      'Electron'
+    ],
+    [
+      chromeUA(
+        'Linux; Android 13; SM-S918B',
+        '120.0.0.0',
+        'Mobile Safari/537.36 EdgA/120.0.2210.115'
+      ),
+      'Microsoft Edge'
+    ]
+  ]) {
+    t.true(brandOf(userAgent).includes(JSON.stringify(brand)), userAgent)
+  }
+})
+
+test('iOS apps report the Apple device', t => {
+  const headers = uaHints('retweet/2.17 (iPhone; iOS 17.1.2; Scale/3.00)')
+  t.is(headers['sec-ch-ua-platform'], '"iOS"')
+  t.is(headers['sec-ch-ua-platform-version'], '"17.1.2"')
+  t.is(headers['sec-ch-ua-model'], '"iPhone"')
+  t.is(headers['sec-ch-ua-mobile'], '?1')
+})
+
+test('reads at most the first 500 characters of the User-Agent', t => {
+  const headers = uaHints(`${'x'.repeat(500)} Chrome/120.0.0.0`)
+  t.false('sec-ch-ua' in headers)
+  t.is(headers['sec-ch-ua-mobile'], '?0')
+})
+
+test('a `Mobile` token anywhere marks an Android phone', t => {
+  const headers = uaHints(
+    'Mozilla/5.0 (Linux; Android 13; K) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/131.0.0.0 Mobile DuckDuckGo/5 Safari/537.36'
+  )
+  t.is(headers['sec-ch-ua-mobile'], '?1')
+  t.is(headers['sec-ch-ua-form-factors'], '["Mobile"]')
+})
+
+test('reads the Android model past browser decorations', t => {
+  const modelOf = userAgent => uaHints(userAgent)['sec-ch-ua-model']
+
+  t.is(
+    modelOf(
+      'Mozilla/5.0 (Linux; Android 14; SAMSUNG SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/26.0 Chrome/122.0.0.0 Mobile Safari/537.36'
+    ),
+    '"SM-S918B"'
+  )
+  t.is(
+    modelOf(
+      'Mozilla/5.0 (Linux; U; Android 9; zh-CN; MI 8 Build/PKQ1.180729.001) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/57.0.2987.108 UCBrowser/13.4.0.1306 Mobile Safari/537.36'
+    ),
+    '"MI 8"'
+  )
+  t.is(
+    modelOf(
+      'Mozilla/5.0 (Linux; Android 14; Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/131.0.0.0 Mobile Safari/537.36'
+    ),
+    undefined
+  )
+})
+
+test('an Android token inside another product is not the platform', t => {
+  const headers = uaHints(
+    chromeUA(
+      'X11; Linux x86_64',
+      '131.0.0.0',
+      'Safari/537.36 MyApp-Android/1.0'
+    )
+  )
+  t.is(headers['sec-ch-ua-platform'], '"Linux"')
+  t.is(headers['sec-ch-ua-form-factors'], '["Desktop"]')
+})
+
+test('compatibility tokens do not hide the real browser', t => {
+  const headers = uaHints(
+    'Mozilla/5.0 (X11; Linux x86_64; Quest 3) AppleWebKit/537.36 (KHTML, like Gecko) OculusBrowser/35.2.0.10.62 SamsungBrowser/4.0 Chrome/128.0.6613.137 VR Safari/537.36'
+  )
+  t.is(headers['sec-ch-ua-full-version'], '"35.2.0.10.62"')
+  t.true(headers['sec-ch-ua'].includes('"Oculus Browser";v="35"'))
+})
+
+test('reports BSD platforms by name', t => {
+  for (const platform of ['FreeBSD', 'OpenBSD']) {
+    const headers = uaHints(chromeUA(`X11; ${platform} amd64`))
+    t.is(headers['sec-ch-ua-platform'], JSON.stringify(platform))
+  }
+})
+
+test('matches tokens regardless of case', t => {
+  const headers = uaHints(chromeUA('Windows NT 10.0; Win64; x64').toLowerCase())
+  t.is(
+    headers['sec-ch-ua'],
+    '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"'
+  )
+  t.is(headers['sec-ch-ua-platform'], '"Windows"')
+})
+
+test('detects the platform and its version', t => {
+  const cases = [
+    [chromeUA('Windows NT 6.1; Win64; x64'), 'Windows', '7'],
+    ['Mozilla/5.0 (Windows NT) Chrome/120.0.0.0', 'Windows', undefined],
+    [chromeUA('X11; CrOS x86_64 14541.0.0'), 'Chrome OS', '14541.0.0'],
+    [chromeUA('Macintosh; Intel Mac OS X 14_6'), 'macOS', '14.6'],
+    [chromeUA('Macintosh'), 'macOS', undefined],
+    [
+      chromeUA('X11; Linux x86_64').replace(
+        'Chrome/',
+        'Ubuntu Chromium/120.0.0.0 Chrome/'
+      ),
+      'Ubuntu',
+      undefined
+    ],
+    ['SpringBoard/50 CFNetwork/1209 Darwin/20.2.0', 'iOS', undefined],
+    [chromeUA('iPad; CPU OS 17_0 like Mac OS X'), 'iOS', '17.0'],
+    [
+      chromeUA(
+        'Linux; Android 10; HarmonyOS; HLK-AL00; HMSCore 6.10.0.312',
+        '88.0.4324.93',
+        'Mobile Safari/537.36'
+      ),
+      'HarmonyOS',
+      undefined
+    ],
+    [
+      'Dalvik/2.1.0 (Linux; U; Android 14; SM-S911N Build/UP1A.231005.007)',
+      'Android',
+      '14'
+    ]
+  ]
+
+  for (const [userAgent, platform, version] of cases) {
+    const headers = uaHints(userAgent)
+    t.is(headers['sec-ch-ua-platform'], JSON.stringify(platform), userAgent)
+    t.is(
+      headers['sec-ch-ua-platform-version'],
+      version && JSON.stringify(version),
+      userAgent
+    )
+  }
+})
+
+test('detects the form factor of Apple and Android devices', t => {
+  const cases = [
+    [chromeUA('iPad; CPU OS 17_0 like Mac OS X'), 'Tablet', '"iPad"'],
+    ['retweet/2.17 (iPhone; iOS 17.1.2; Scale/3.00)', 'Mobile', '"iPhone"'],
+    ['SpringBoard/50 CFNetwork/1209 Darwin/20.2.0', 'Desktop', undefined],
+    [
+      'Dalvik/2.1.0 (Linux; U; Android 14; SM-S911N Build/UP1A.231005.007)',
+      'Mobile',
+      '"SM-S911N"'
+    ],
+    ['Mozilla/5.0 (Linux; Android 14)', 'Desktop', undefined]
+  ]
+
+  for (const [userAgent, formFactor, model] of cases) {
+    const headers = uaHints(userAgent)
+    t.is(
+      headers['sec-ch-ua-form-factors'],
+      JSON.stringify([formFactor]),
+      userAgent
+    )
+    t.is(headers['sec-ch-ua-model'], model, userAgent)
+  }
+})

@@ -29,9 +29,6 @@
     "ua",
     "user-agent"
   ],
-  "dependencies": {
-    "ua-parser-js": "~2.0.3"
-  },
   "devDependencies": {
     "@commitlint/cli": "latest",
     "@commitlint/config-conventional": "latest",

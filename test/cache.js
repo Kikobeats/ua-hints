@@ -9,15 +9,12 @@ let parses = 0
 const originalRequire = Module.prototype.require
 Module.prototype.require = function (request) {
   const loaded = originalRequire.apply(this, arguments)
-  if (request !== 'ua-parser-js') return loaded
+  if (request !== './parse-user-agent') return loaded
 
-  const Parser = loaded
-  function CountingParser (...args) {
+  return userAgent => {
     parses += 1
-    return new Parser(...args)
+    return loaded(userAgent)
   }
-
-  return CountingParser
 }
 
 const uaHints = require('..')
