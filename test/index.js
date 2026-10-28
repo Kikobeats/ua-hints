@@ -834,6 +834,39 @@ test('treats Chrome 28 as the first Blink version', t => {
   )
 })
 
+test('a tab can separate a platform from its version', t => {
+  t.is(
+    uaHints(chromeUA('Windows NT\t10.0'))['sec-ch-ua-platform-version'],
+    '"10"'
+  )
+  t.is(
+    uaHints(chromeUA('Macintosh; Intel Mac OS X\t10_15_7'))[
+      'sec-ch-ua-platform-version'
+    ],
+    '"10.15.7"'
+  )
+  const cros = uaHints(chromeUA('X11; CrOS x86_64\t14541.0.0'))
+  t.is(cros['sec-ch-ua-platform'], '"Chrome OS"')
+  t.is(cros['sec-ch-ua-platform-version'], '"14541.0.0"')
+  const crosBoard = uaHints(chromeUA('X11; CrOS\tx86_64 14541.0.0'))
+  t.is(crosBoard['sec-ch-ua-platform'], '"Chrome OS"')
+  const android = uaHints(
+    chromeUA('Linux; Android\t14; Pixel 8', '120.0.0.0', 'Mobile Safari/537.36')
+  )
+  t.is(android['sec-ch-ua-platform-version'], '"14"')
+  t.is(android['sec-ch-ua-model'], '"Pixel 8"')
+  t.is(
+    uaHints(
+      chromeUA(
+        'iPhone; CPU iPhone OS\t17_0 like Mac OS X',
+        '120.0.0.0',
+        'Mobile Safari/537.36'
+      )
+    )['sec-ch-ua-platform-version'],
+    '"17.0"'
+  )
+})
+
 test('reads a Windows version with no space after NT', t => {
   const headers = uaHints(
     'Mozilla/5.0 (Windows NT10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
