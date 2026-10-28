@@ -6,7 +6,7 @@ const FIRST_BLINK_MAJOR = 28
 
 const MAX_USER_AGENT_LENGTH = 500
 
-const EDGE_HTML = /\bEdge\/\d/
+const EDGE_HTML = /\bEdge\/\d/i
 const BLINK = /AppleWebKit\/537\.36\b.*?\b(?:Headless)?Chrome\/(-?[\w.]+)/i
 
 const OTHER_ENGINES =
@@ -144,9 +144,12 @@ const androidFormFactorOf = (userAgent, model) => {
   return model ? 'Mobile' : 'Desktop'
 }
 
+const WEBVIEW_TOKEN = 'wv'
+
 const androidDeviceOf = userAgent => {
   const match = ANDROID_MODEL.exec(userAgent)
-  const model = match ? match[1] : ''
+  const model =
+    match && match[1].toLowerCase() !== WEBVIEW_TOKEN ? match[1] : ''
   return { model, formFactor: androidFormFactorOf(userAgent, model) }
 }
 

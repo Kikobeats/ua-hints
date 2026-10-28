@@ -513,6 +513,23 @@ test('detects the form factor regardless of case', t => {
   }
 })
 
+test('returns no hints for EdgeHTML regardless of case', t => {
+  const userAgent =
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19582'
+  t.deepEqual(uaHints(userAgent), {})
+  t.deepEqual(uaHints(userAgent.toLowerCase()), {})
+})
+
+test('does not report the WebView token as the device model', t => {
+  const withoutModel =
+    'Mozilla/5.0 (Linux; Android 13; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.230 Mobile Safari/537.36'
+  const withModel =
+    'Mozilla/5.0 (Linux; Android 13; SM-S918B Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.230 Mobile Safari/537.36'
+  t.is(uaHints(withoutModel)['sec-ch-ua-model'], undefined)
+  t.is(uaHints(withoutModel)['sec-ch-ua-form-factors'], '["Mobile"]')
+  t.is(uaHints(withModel)['sec-ch-ua-model'], '"SM-S918B"')
+})
+
 test('detects the platform and its version', t => {
   const cases = [
     [chromeUA('Windows NT 6.1; Win64; x64'), 'Windows', '7'],
