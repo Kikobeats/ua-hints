@@ -26,10 +26,15 @@ const BRAND_ORDERS = [
 
 const CACHE_SIZE = 1000
 
-// A leading boundary keeps `arm` inside `HarmonyOS` from becoming the arch.
-const ARM = /(?:^|[^a-z0-9])(?:aarch64|arm)/
-const X86 = /x86|i686|i386|amd64|x64/
-const SIXTY_FOUR_BIT = /arm64|aarch64|x86_64|amd64|win64|x64/
+// Whole tokens only. `arm` inside HarmonyOS, and `x64` inside a model, are not the CPU.
+const BOUND = '(?:^|[^a-z0-9])'
+const TAIL = '(?:[^a-z0-9]|$)'
+const ARM = new RegExp(`${BOUND}(?:aarch64|arm(?:64|v\\d+l?)?)${TAIL}`)
+const X86 = new RegExp(`${BOUND}(?:x86_64|x86|i686|i386|amd64|x64)${TAIL}`)
+const SIXTY_FOUR_BIT = new RegExp(
+  `${BOUND}(?:arm64|aarch64|x86_64|amd64|win64|x64)${TAIL}`
+)
+const WOW64 = new RegExp(`${BOUND}wow64${TAIL}`)
 
 const greaseBrandVersion = seed => ({
   brand: `Not${GREASE_CHARS[seed % GREASE_CHARS.length]}A${
@@ -149,7 +154,7 @@ const getHints = userAgent => {
     hints['sec-ch-ua-full-version-list'] = serializeBrands(brandList)
   }
 
-  hints['sec-ch-ua-wow64'] = uaLower.includes('wow64') ? '?1' : '?0'
+  hints['sec-ch-ua-wow64'] = WOW64.test(uaLower) ? '?1' : '?0'
   hints['sec-ch-ua-form-factors'] = JSON.stringify([formFactor])
 
   return hints

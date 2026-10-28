@@ -154,11 +154,15 @@ test('detects architecture and bitness', t => {
     ['Windows NT 10.0; Win64; x64', '"x86"', '"64"'],
     ['X11; Linux armv7l', '"arm"', '"32"'],
     ['X11; Linux i686', '"x86"', '"32"'],
+    ['X11; Linux x86; win64extra', '"x86"', '"32"'],
     ['Macintosh; Intel Mac OS X 10_15_7', undefined, undefined],
     ['X11; Linux aarch64', '"arm"', '"64"'],
     ['Linux; Android 10; HarmonyOS; HLK-AL00', undefined, undefined],
     ['X11; Linux x86_64; HarmonyOS', '"x86"', '"64"'],
-    ['Linux; Android 10; HarmonyOS; AArch64', '"arm"', '"64"']
+    ['Linux; Android 10; HarmonyOS; AArch64', '"arm"', '"64"'],
+    ['Linux; Android 10; SM-X640', undefined, undefined],
+    ['Linux; Android 10; Pixelx64', undefined, undefined],
+    ['X11; Linux armextra', undefined, undefined]
   ]
 
   for (const [platform, arch, bitness] of architectures) {
@@ -170,6 +174,16 @@ test('detects architecture and bitness', t => {
   const leading = uaHints('aarch64 Chrome/120.0.0.0')
   t.is(leading['sec-ch-ua-arch'], '"arm"')
   t.is(leading['sec-ch-ua-bitness'], '"64"')
+
+  t.is(
+    uaHints(chromeUA('Windows NT 10.0; Win64; x64; WOW64'))['sec-ch-ua-wow64'],
+    '?1'
+  )
+  t.is(
+    uaHints(chromeUA('Windows NT 10.0; wow64extra'))['sec-ch-ua-wow64'],
+    '?0'
+  )
+  t.is(uaHints(chromeUA('Windows NT 10.0; x64wow64'))['sec-ch-ua-wow64'], '?0')
 })
 
 test('omits `sec-ch-ua-model` on desktop', t => {
@@ -661,7 +675,16 @@ test('a glued platform token is not that platform', t => {
     [chromeUA('Xubuntu'), undefined],
     [chromeUA('X11; Xubuntu; Linux x86_64'), 'Linux'],
     [chromeUA('NotMacintosh'), undefined],
-    [chromeUA('MacintoshPhone'), undefined]
+    [chromeUA('MacintoshPhone'), undefined],
+    [chromeUA('NotWindows NT 10.0'), undefined],
+    [chromeUA('Windows NTPhone'), undefined],
+    [chromeUA('MyMac OS X 10_15_7'), undefined],
+    [chromeUA('Mac OS Xtra'), undefined],
+    [chromeUA('NotCrOS x86_64 14541.0.0'), undefined],
+    [chromeUA('NotCFNetwork/1209 Darwin/20.2.0'), undefined],
+    ['Windows NT 10.0 Chrome/120.0.0.0', 'Windows'],
+    ['Mac OS X 14_6 Chrome/120.0.0.0', 'macOS'],
+    ['CFNetwork/1209 Chrome/120.0.0.0', 'iOS']
   ]
   for (const [userAgent, platform] of cases) {
     t.is(
@@ -772,8 +795,9 @@ test('hints come only from the first 500 characters', t => {
   // cut. One character less or more changes the platform version.
   const version = 'Windows NT 6.1'
   const prefix = 'Mozilla/5.0 ('
+  // A space, not a letter: a letter would glue onto Windows and stop being that token.
   const capped =
-    prefix + 'x'.repeat(500 - prefix.length - version.length) + version
+    prefix + ' '.repeat(500 - prefix.length - version.length) + version
   t.is(capped.length, 500)
   const bounded = `${capped}1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36`
   t.is(uaHints(bounded)['sec-ch-ua-platform-version'], '"7"')

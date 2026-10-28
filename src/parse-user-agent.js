@@ -73,14 +73,14 @@ const WINDOWS_VERSIONS = {
   '5.0': '2000'
 }
 
-const WINDOWS = /Windows NT ?([\d.]*)/i
+const WINDOWS = /\bWindows NT(?![A-Za-z]) ?([\d.]*)/i
 const HARMONY = /(?:^|[(;] ?)HarmonyOS\b/i
 const ANDROID = /(?:^|[(;] ?)Android\b(?: ([\d.]+))?/i
-const CHROME_OS = /CrOS \S+ ([\d.]+)/i
+const CHROME_OS = /\bCrOS \S+ ([\d.]+)/i
 const IOS = /\b(?:iPhone|iPad|iPod)\b.*?\bi?OS ([\d_.]+)/i
 const BSD = /\b(Free|Open|Net)BSD\b/i
-const MAC_OS = /Mac OS X(?: ([\d_.]+))?/i
-const CFNETWORK = /CFNetwork\//i
+const MAC_OS = /\bMac OS X\b(?: ([\d_.]+))?/i
+const CFNETWORK = /\bCFNetwork\//i
 const MACINTOSH = /\bMacintosh\b/i
 const UBUNTU = /\bUbuntu\b/i
 const LINUX = /\bLinux\b/i
