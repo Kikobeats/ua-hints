@@ -73,7 +73,7 @@ const WINDOWS_VERSIONS = {
   '5.0': '2000'
 }
 
-const WINDOWS = /\bWindows NT(?![A-Za-z]) ?([\d.]*)/i
+const WINDOWS = /\bWindows NT(?![A-Za-z]) ?(\d+(?:\.\d+)?)?/i
 const HARMONY = /(?:^|[(;] ?)HarmonyOS\b/i
 const ANDROID = /(?:^|[(;] ?)Android\b(?: ([\d.]+))?/i
 const CHROME_OS = /\bCrOS \S+ ([\d.]+)/i

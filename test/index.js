@@ -846,7 +846,9 @@ test('maps every Windows NT version', t => {
     ['5.2', 'XP'],
     ['5.1', 'XP'],
     ['5.0', '2000'],
-    ['4.0', '4.0']
+    ['4.0', '4.0'],
+    ['6.1.7601', '7'],
+    ['10.0.19041', '10']
   ]
 
   for (const [nt, platformVersion] of versions) {
