@@ -27,12 +27,13 @@ const BRAND_ORDERS = [
 const CACHE_SIZE = 1000
 
 // Whole tokens only. `arm` inside HarmonyOS, and `x64` inside a model, are not the CPU.
+// `Win64` is the Windows edition, so it does not make an x86 or armv7l CPU 64-bit.
 const BOUND = '(?:^|[^a-z0-9])'
 const TAIL = '(?:[^a-z0-9]|$)'
 const ARM = new RegExp(`${BOUND}(?:aarch64|arm(?:64|v\\d+l?)?)${TAIL}`)
 const X86 = new RegExp(`${BOUND}(?:x86_64|x86|i686|i386|amd64|x64)${TAIL}`)
 const SIXTY_FOUR_BIT = new RegExp(
-  `${BOUND}(?:arm64|aarch64|x86_64|amd64|win64|x64)${TAIL}`
+  `${BOUND}(?:arm64|aarch64|x86_64|amd64|x64)${TAIL}`
 )
 const WOW64 = new RegExp(`${BOUND}wow64${TAIL}`)
 
