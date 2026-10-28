@@ -941,6 +941,22 @@ test('reads an Apple device at the start of the string and after a semicolon', t
   }
 })
 
+test('a field token can follow a semicolon with no space', t => {
+  const tail =
+    ' AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
+  const iphone = uaHints(`;iPhone; CPU iPhone OS 17_0 like Mac OS X)${tail}`)
+  t.is(iphone['sec-ch-ua-platform'], '"iOS"')
+  t.is(iphone['sec-ch-ua-model'], '"iPhone"')
+
+  const android = uaHints(`Mozilla/5.0 (;Android 14; Pixel 8)${tail}`)
+  t.is(android['sec-ch-ua-platform'], '"Android"')
+  t.is(android['sec-ch-ua-platform-version'], '"14"')
+  t.is(android['sec-ch-ua-model'], '"Pixel 8"')
+
+  const harmony = uaHints(`Mozilla/5.0 (;HarmonyOS)${tail}`)
+  t.is(harmony['sec-ch-ua-platform'], '"HarmonyOS"')
+})
+
 test('reads Android at the start of the string and after an opening parenthesis', t => {
   const atStart =
     'Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
