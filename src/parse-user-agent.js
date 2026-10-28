@@ -96,15 +96,19 @@ const BSD_PLATFORM = { free: 'FreeBSD', open: 'OpenBSD', net: 'NetBSD' }
 // string or after `;` still has a model. A product like `MyApp-iPhone` does not.
 const APPLE_DEVICE = /(?:^|[(;]\s?)(iPhone|iPad|iPod)\b/i
 // The device field follows the Android version. Skip a `U;` marker, a locale
-// (`zh-CN`, `zh_CN`, `es-419`), `HarmonyOS`, and Samsung's vendor prefix.
-// A later `Build/` or `HMSCore/` token is firmware, not the device name.
-// Separators here are any run of whitespace, including none before the model,
-// so `;Pixel` and `;\tPixel` still name the device. `SAMSUNG` is the vendor
-// when it is its own field or whitespace follows it; `SAMSUNGGalaxy` is the model.
-const ANDROID_MODEL =
-  /(?:^|[(;]\s?)Android\b[^;)]*;(?:\s*U;)?(?:\s*[a-z]{2,3}[-_](?:[a-z]{2}|\d{3});)?(?:\s*HarmonyOS;)?(?:\s*SAMSUNG(?:;|(?=\s)))?\s*((?:[^;()/]|\([^;()/]*\))+?)(?:\s+[^\s;()]*\/[^;)]*)?[;)]/i
+// (`zh-CN`, `zh_CN`, `es-419`, `zh-Hans-CN`), `HarmonyOS`, and Samsung's
+// vendor prefix. A later `Build/` or `HMSCore/` token is firmware, not the
+// device name. Separators are any run of whitespace, including none before
+// the model, so `;Pixel` and `;\tPixel` still name the device. `SAMSUNG` is
+// the vendor when it is its own field or whitespace follows it;
+// `SAMSUNGGalaxy` is the model.
+const LOCALE = '[a-z]{2,3}(?:[-_][a-z]{4})?[-_](?:[a-z]{2}|\\d{3})'
+const ANDROID_MODEL = new RegExp(
+  `(?:^|[(;]\\s?)Android\\b[^;)]*;(?:\\s*U;)?(?:\\s*${LOCALE};)?(?:\\s*HarmonyOS;)?(?:\\s*SAMSUNG(?:;|(?=\\s)))?\\s*((?:[^;()/]|\\([^;()/]*\\))+?)(?:\\s+[^\\s;()]*\\/[^;)]*)?[;)]`,
+  'i'
+)
 const IGNORED_MODEL = /^(?:wv|harmonyos)$/i
-const LOCALE_MODEL = /^[a-z]{2,3}[-_](?:[a-z]{2}|\d{3})$/i
+const LOCALE_MODEL = new RegExp(`^${LOCALE}$`, 'i')
 const TABLET_SAFARI = /\/[\w.]+ Safari\//i
 const MOBILE = /\bMobile\b/i
 
