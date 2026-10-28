@@ -916,6 +916,9 @@ test('the Android model survives any whitespace around its field', t => {
   )
   t.is(modelOf(mobile('Linux; Android 10;HarmonyOS;HLK-AL00')), '"HLK-AL00"')
   t.is(modelOf(mobile('Linux; Android 14;\tSAMSUNG\tSM-G998B')), '"SM-G998B"')
+  t.is(modelOf(mobile('Linux; Android 14; SAMSUNG; SM-G998B')), '"SM-G998B"')
+  t.is(modelOf(mobile('Linux; Android 14;SAMSUNG;SM-G998B')), '"SM-G998B"')
+  t.is(modelOf(mobile('Linux; Android 14;\tSAMSUNG;\tSM-G998B')), '"SM-G998B"')
   t.is(modelOf(mobile('Linux; Android 14; SAMSUNGGalaxy')), '"SAMSUNGGalaxy"')
   t.is(
     modelOf(

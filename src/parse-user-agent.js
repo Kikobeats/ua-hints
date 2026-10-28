@@ -99,10 +99,10 @@ const APPLE_DEVICE = /(?:^|[(;]\s?)(iPhone|iPad|iPod)\b/i
 // (`zh-CN`, `zh_CN`, `es-419`), `HarmonyOS`, and Samsung's vendor prefix.
 // A later `Build/` or `HMSCore/` token is firmware, not the device name.
 // Separators here are any run of whitespace, including none before the model,
-// so `;Pixel` and `;\tPixel` still name the device. `SAMSUNG` is only the
-// vendor prefix when whitespace follows it; `SAMSUNGGalaxy` is the model.
+// so `;Pixel` and `;\tPixel` still name the device. `SAMSUNG` is the vendor
+// when it is its own field or whitespace follows it; `SAMSUNGGalaxy` is the model.
 const ANDROID_MODEL =
-  /(?:^|[(;]\s?)Android\b[^;)]*;(?:\s*U;)?(?:\s*[a-z]{2,3}[-_](?:[a-z]{2}|\d{3});)?(?:\s*HarmonyOS;)?(?:\s+SAMSUNG(?=\s))?\s*((?:[^;()/]|\([^;()/]*\))+?)(?:\s+[^\s;()]*\/[^;)]*)?[;)]/i
+  /(?:^|[(;]\s?)Android\b[^;)]*;(?:\s*U;)?(?:\s*[a-z]{2,3}[-_](?:[a-z]{2}|\d{3});)?(?:\s*HarmonyOS;)?(?:\s*SAMSUNG(?:;|(?=\s)))?\s*((?:[^;()/]|\([^;()/]*\))+?)(?:\s+[^\s;()]*\/[^;)]*)?[;)]/i
 const IGNORED_MODEL = /^(?:wv|harmonyos)$/i
 const LOCALE_MODEL = /^[a-z]{2,3}[-_](?:[a-z]{2}|\d{3})$/i
 const TABLET_SAFARI = /\/[\w.]+ Safari\//i
