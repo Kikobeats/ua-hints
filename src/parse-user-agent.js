@@ -81,9 +81,9 @@ const IOS = /\b(?:iPhone|iPad|iPod)\b.*?\bi?OS ([\d_.]+)/i
 const BSD = /\b(Free|Open|Net)BSD\b/i
 const MAC_OS = /Mac OS X(?: ([\d_.]+))?/i
 const CFNETWORK = /CFNetwork\//i
-const MACINTOSH = /Macintosh/i
-const UBUNTU = /Ubuntu/i
-const LINUX = /Linux/i
+const MACINTOSH = /\bMacintosh\b/i
+const UBUNTU = /\bUbuntu\b/i
+const LINUX = /\bLinux\b/i
 
 // `match[0]` keeps the caller's casing. Hints use Chromium's names.
 const BSD_PLATFORM = { free: 'FreeBSD', open: 'OpenBSD', net: 'NetBSD' }

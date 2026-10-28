@@ -654,7 +654,14 @@ test('a glued platform token is not that platform', t => {
     [chromeUA('X11; Linux x86_64; HarmonyOSPhone'), 'Linux'],
     [chromeUA('X11; Linux x86_64; AndroidPhone'), 'Linux'],
     [chromeUA('X11; FreeBSDextra'), undefined],
-    [chromeUA('X11; NotFreeBSD'), undefined]
+    [chromeUA('X11; NotFreeBSD'), undefined],
+    [chromeUA('X11; NotLinux'), undefined],
+    [chromeUA('X11; LinuxPhone'), undefined],
+    [chromeUA('X11; MyUbuntuApp'), undefined],
+    [chromeUA('Xubuntu'), undefined],
+    [chromeUA('X11; Xubuntu; Linux x86_64'), 'Linux'],
+    [chromeUA('NotMacintosh'), undefined],
+    [chromeUA('MacintoshPhone'), undefined]
   ]
   for (const [userAgent, platform] of cases) {
     t.is(
