@@ -867,6 +867,67 @@ test('a tab can separate a platform from its version', t => {
   )
 })
 
+test('repeated whitespace can separate a platform from its version', t => {
+  t.is(
+    uaHints(chromeUA('Windows NT  10.0'))['sec-ch-ua-platform-version'],
+    '"10"'
+  )
+  t.is(
+    uaHints(chromeUA('Macintosh; Intel Mac OS X  10_15_7'))[
+      'sec-ch-ua-platform-version'
+    ],
+    '"10.15.7"'
+  )
+  const cros = uaHints(chromeUA('X11; CrOS x86_64  14541.0.0'))
+  t.is(cros['sec-ch-ua-platform'], '"Chrome OS"')
+  t.is(cros['sec-ch-ua-platform-version'], '"14541.0.0"')
+  const crosBoard = uaHints(chromeUA('X11; CrOS  x86_64 14541.0.0'))
+  t.is(crosBoard['sec-ch-ua-platform'], '"Chrome OS"')
+  const android = uaHints(
+    chromeUA('Linux; Android  14; Pixel 8', '120.0.0.0', 'Mobile Safari/537.36')
+  )
+  t.is(android['sec-ch-ua-platform-version'], '"14"')
+  t.is(android['sec-ch-ua-model'], '"Pixel 8"')
+  t.is(
+    uaHints(
+      chromeUA(
+        'iPhone; CPU iPhone OS  17_0 like Mac OS X',
+        '120.0.0.0',
+        'Mobile Safari/537.36'
+      )
+    )['sec-ch-ua-platform-version'],
+    '"17.0"'
+  )
+})
+
+test('the Android model survives any whitespace around its field', t => {
+  const mobile = (platform, trailer = 'Mobile Safari/537.36') =>
+    chromeUA(platform, '120.0.0.0', trailer)
+  const modelOf = userAgent => uaHints(userAgent)['sec-ch-ua-model']
+
+  t.is(modelOf(mobile('Linux; Android 14;\tPixel 8')), '"Pixel 8"')
+  t.is(modelOf(mobile('Linux; Android 14;Pixel 8')), '"Pixel 8"')
+  t.is(modelOf(mobile('Linux; Android 14;  Pixel 8')), '"Pixel 8"')
+  t.is(modelOf(mobile('Linux; Android 10;\tU;\ten-us;\tPixel')), '"Pixel"')
+  t.is(modelOf(mobile('Linux; Android 10;U;en-us;Pixel')), '"Pixel"')
+  t.is(
+    modelOf(mobile('Linux; Android 10;\tHarmonyOS;\tHLK-AL00')),
+    '"HLK-AL00"'
+  )
+  t.is(modelOf(mobile('Linux; Android 10;HarmonyOS;HLK-AL00')), '"HLK-AL00"')
+  t.is(modelOf(mobile('Linux; Android 14;\tSAMSUNG\tSM-G998B')), '"SM-G998B"')
+  t.is(modelOf(mobile('Linux; Android 14; SAMSUNGGalaxy')), '"SAMSUNGGalaxy"')
+  t.is(
+    modelOf(
+      mobile(
+        'Linux; Android 13; Pixel 8\tBuild/TP1A.220624.014',
+        'Safari/537.36'
+      )
+    ),
+    '"Pixel 8"'
+  )
+})
+
 test('reads a Windows version with no space after NT', t => {
   const headers = uaHints(
     'Mozilla/5.0 (Windows NT10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'

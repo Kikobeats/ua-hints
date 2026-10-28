@@ -73,16 +73,17 @@ const WINDOWS_VERSIONS = {
   '5.0': '2000'
 }
 
-const WINDOWS = /\bWindows NT(?![A-Za-z])\s?(\d+(?:\.\d+)?)?/i
+const WINDOWS = /\bWindows NT(?![A-Za-z])\s*(\d+(?:\.\d+)?)?/i
 const HARMONY = /(?:^|[(;]\s?)HarmonyOS\b/i
-const ANDROID = /(?:^|[(;]\s?)Android\b(?:\s([\d.]+))?/i
-const CHROME_OS = /\bCrOS\s\S+\s([\d.]+)/i
+const ANDROID = /(?:^|[(;]\s?)Android\b(?:\s+([\d.]+))?/i
+const CHROME_OS = /\bCrOS\s+\S+\s+([\d.]+)/i
 // The device token has to follow the start, `(`, or `;`. A product such as
 // `MyApp-iPhone` is not the platform. The OS version is optional: without it,
 // `like Mac OS X` would make an iPhone macOS.
-const IOS = /(?:^|[(;]\s?)(?:iPhone|iPad|iPod)\b(?:.*?\bi?OS(?:\s([\d_.]+))?)?/i
+const IOS =
+  /(?:^|[(;]\s?)(?:iPhone|iPad|iPod)\b(?:.*?\bi?OS(?:\s+([\d_.]+))?)?/i
 const BSD = /\b(Free|Open|Net)BSD\b/i
-const MAC_OS = /\bMac OS X\b(?:\s([\d_.]+))?/i
+const MAC_OS = /\bMac OS X\b(?:\s+([\d_.]+))?/i
 const CFNETWORK = /\bCFNetwork\//i
 const MACINTOSH = /\bMacintosh\b/i
 const UBUNTU = /\bUbuntu\b/i
@@ -97,8 +98,11 @@ const APPLE_DEVICE = /(?:^|[(;]\s?)(iPhone|iPad|iPod)\b/i
 // The device field follows the Android version. Skip a `U;` marker, a locale
 // (`zh-CN`, `zh_CN`, `es-419`), `HarmonyOS`, and Samsung's vendor prefix.
 // A later `Build/` or `HMSCore/` token is firmware, not the device name.
+// Separators here are any run of whitespace, including none before the model,
+// so `;Pixel` and `;\tPixel` still name the device. `SAMSUNG` is only the
+// vendor prefix when whitespace follows it; `SAMSUNGGalaxy` is the model.
 const ANDROID_MODEL =
-  /(?:^|[(;]\s?)Android\b[^;)]*;(?: U;)?(?: [a-z]{2,3}[-_](?:[a-z]{2}|\d{3});)?(?: HarmonyOS;)?(?: SAMSUNG)? ((?:[^;()/]|\([^;()/]*\))+?)(?: [^\s;()]*\/[^;)]*)?[;)]/i
+  /(?:^|[(;]\s?)Android\b[^;)]*;(?:\s*U;)?(?:\s*[a-z]{2,3}[-_](?:[a-z]{2}|\d{3});)?(?:\s*HarmonyOS;)?(?:\s+SAMSUNG(?=\s))?\s*((?:[^;()/]|\([^;()/]*\))+?)(?:\s+[^\s;()]*\/[^;)]*)?[;)]/i
 const IGNORED_MODEL = /^(?:wv|harmonyos)$/i
 const LOCALE_MODEL = /^[a-z]{2,3}[-_](?:[a-z]{2}|\d{3})$/i
 const TABLET_SAFARI = /\/[\w.]+ Safari\//i
