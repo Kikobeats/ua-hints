@@ -31,7 +31,8 @@ const CACHE_SIZE = 1000
 const BOUND = '(?:^|[^a-z0-9])'
 const TAIL = '(?:[^a-z0-9]|$)'
 const ARM = new RegExp(`${BOUND}(?:aarch64|arm(?:64|v\\d+l?)?)${TAIL}`)
-const X86 = new RegExp(`${BOUND}(?:x86_64|x86|i686|i386|amd64|x64)${TAIL}`)
+// `x86_64` matches as `x86` because `_` is a token boundary. Bitness still reads `x86_64`.
+const X86 = new RegExp(`${BOUND}(?:x86|i686|i386|amd64|x64)${TAIL}`)
 const SIXTY_FOUR_BIT = new RegExp(
   `${BOUND}(?:arm64|aarch64|x86_64|amd64|x64)${TAIL}`
 )
