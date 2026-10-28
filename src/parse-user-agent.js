@@ -74,15 +74,28 @@ const WINDOWS_VERSIONS = {
 }
 
 const WINDOWS = /Windows NT ?([\d.]*)/i
+const HARMONY = /(?:^|[(;] ?)HarmonyOS\b/i
 const ANDROID = /(?:^|[(;] ?)Android\b(?: ([\d.]+))?/i
 const CHROME_OS = /CrOS \S+ ([\d.]+)/i
 const IOS = /\b(?:iPhone|iPad|iPod)\b.*?\bi?OS ([\d_.]+)/i
-const BSD = /\b(?:Free|Open|Net)BSD\b/
+const BSD = /\b(Free|Open|Net)BSD\b/i
 const MAC_OS = /Mac OS X(?: ([\d_.]+))?/i
+const CFNETWORK = /CFNetwork\//i
+const MACINTOSH = /Macintosh/i
+const UBUNTU = /Ubuntu/i
+const LINUX = /Linux/i
+
+// `match[0]` keeps the caller's casing. Hints use Chromium's names.
+const BSD_PLATFORM = { free: 'FreeBSD', open: 'OpenBSD', net: 'NetBSD' }
 
 const APPLE_DEVICE = /\((iPhone|iPad|iPod)/i
+// The device field follows the Android version. Skip a `U;` marker, a locale
+// (`zh-CN`, `zh_CN`, `es-419`), `HarmonyOS`, and Samsung's vendor prefix.
+// A later `Build/` or `HMSCore/` token is firmware, not the device name.
 const ANDROID_MODEL =
-  /(?:^|[(;] ?)Android\b[^;)]*;(?: U;)?(?: [a-z]{2}[-_][a-z]{2};)?(?: HarmonyOS;)?(?: SAMSUNG)? ((?:[^;()/]|\([^;()/]*\))+?)(?: [^\s;()]*\/[^;)]*)?[;)]/i
+  /(?:^|[(;] ?)Android\b[^;)]*;(?: U;)?(?: [a-z]{2,3}[-_](?:[a-z]{2}|\d{3});)?(?: HarmonyOS;)?(?: SAMSUNG)? ((?:[^;()/]|\([^;()/]*\))+?)(?: [^\s;()]*\/[^;)]*)?[;)]/i
+const IGNORED_MODEL = /^(?:wv|harmonyos)$/i
+const LOCALE_MODEL = /^[a-z]{2,3}[-_](?:[a-z]{2}|\d{3})$/i
 const TABLET_SAFARI = /\/[\w.]+ Safari\//i
 const MOBILE = /\bMobile\b/i
 
@@ -110,21 +123,21 @@ const platformOf = userAgent => {
       platformVersion: WINDOWS_VERSIONS[version] || version
     }
   }
-  if (userAgent.includes('HarmonyOS')) return { platform: 'HarmonyOS' }
+  if (HARMONY.test(userAgent)) return { platform: 'HarmonyOS' }
   match = ANDROID.exec(userAgent)
   if (match) return { platform: 'Android', platformVersion: match[1] }
   match = CHROME_OS.exec(userAgent)
   if (match) return { platform: 'Chrome OS', platformVersion: match[1] }
   match = IOS.exec(userAgent)
   if (match) return { platform: 'iOS', platformVersion: dotted(match[1]) }
-  if (userAgent.includes('CFNetwork/')) return { platform: 'iOS' }
+  if (CFNETWORK.test(userAgent)) return { platform: 'iOS' }
   match = MAC_OS.exec(userAgent)
   if (match) return { platform: 'macOS', platformVersion: dotted(match[1]) }
-  if (userAgent.includes('Macintosh')) return { platform: 'macOS' }
-  if (userAgent.includes('Ubuntu')) return { platform: 'Ubuntu' }
-  if (userAgent.includes('Linux')) return { platform: 'Linux' }
+  if (MACINTOSH.test(userAgent)) return { platform: 'macOS' }
+  if (UBUNTU.test(userAgent)) return { platform: 'Ubuntu' }
+  if (LINUX.test(userAgent)) return { platform: 'Linux' }
   match = BSD.exec(userAgent)
-  if (match) return { platform: match[0] }
+  if (match) return { platform: BSD_PLATFORM[match[1].toLowerCase()] }
   return {}
 }
 
@@ -144,12 +157,13 @@ const androidFormFactorOf = (userAgent, model) => {
   return model ? 'Mobile' : 'Desktop'
 }
 
-const WEBVIEW_TOKEN = 'wv'
-
 const androidDeviceOf = userAgent => {
   const match = ANDROID_MODEL.exec(userAgent)
+  const captured = match ? match[1] : ''
   const model =
-    match && match[1].toLowerCase() !== WEBVIEW_TOKEN ? match[1] : ''
+    captured && !IGNORED_MODEL.test(captured) && !LOCALE_MODEL.test(captured)
+      ? captured
+      : ''
   return { model, formFactor: androidFormFactorOf(userAgent, model) }
 }
 
@@ -179,6 +193,9 @@ module.exports = input => {
     platform,
     platformVersion,
     model,
-    formFactor
+    formFactor,
+    // Architecture and WOW64 are read in index.js. They have to see the same
+    // prefix the expressions above already matched.
+    userAgent
   }
 }

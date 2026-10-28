@@ -96,10 +96,11 @@ const getHints = userAgent => {
     platform,
     platformVersion,
     model,
-    formFactor
+    formFactor,
+    userAgent: limitedUserAgent
   } = userAgentData
 
-  const uaLower = userAgent.toLowerCase()
+  const uaLower = limitedUserAgent.toLowerCase()
 
   const brandList = generateBrandVersionList(
     brand,
@@ -109,7 +110,8 @@ const getHints = userAgent => {
 
   const { arch, bitness } = getArchAndBitness(uaLower)
 
-  const deviceModel = model !== REDUCED_UA_MODEL ? model : ''
+  const deviceModel =
+    model.toLowerCase() === REDUCED_UA_MODEL.toLowerCase() ? '' : model
 
   const hints = {}
 

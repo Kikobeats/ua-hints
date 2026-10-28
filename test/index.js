@@ -199,6 +199,7 @@ test('an unparseable user agent yields no versioned hints', t => {
 
     t.is(headers['sec-ch-ua-mobile'], '?0', label)
     t.is(headers['sec-ch-ua-form-factors'], '["Desktop"]', label)
+    t.false('sec-ch-ua-platform' in headers, label)
     t.false('sec-ch-ua' in headers, label)
     t.false('sec-ch-ua-full-version' in headers, label)
     t.false('sec-ch-ua-full-version-list' in headers, label)
@@ -473,7 +474,7 @@ test('compatibility tokens do not hide the real browser', t => {
 })
 
 test('reports BSD platforms by name', t => {
-  for (const platform of ['FreeBSD', 'OpenBSD']) {
+  for (const platform of ['FreeBSD', 'OpenBSD', 'NetBSD']) {
     const headers = uaHints(chromeUA(`X11; ${platform} amd64`))
     t.is(headers['sec-ch-ua-platform'], JSON.stringify(platform))
   }
@@ -525,8 +526,14 @@ test('does not report the WebView token as the device model', t => {
     'Mozilla/5.0 (Linux; Android 13; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.230 Mobile Safari/537.36'
   const withModel =
     'Mozilla/5.0 (Linux; Android 13; SM-S918B Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.230 Mobile Safari/537.36'
+  const uppercaseToken = withoutModel.replace('; wv)', '; WV)')
   t.is(uaHints(withoutModel)['sec-ch-ua-model'], undefined)
+  t.is(uaHints(uppercaseToken)['sec-ch-ua-model'], undefined)
   t.is(uaHints(withoutModel)['sec-ch-ua-form-factors'], '["Mobile"]')
+  t.is(
+    uaHints(withoutModel.toLowerCase())['sec-ch-ua-form-factors'],
+    '["Mobile"]'
+  )
   t.is(uaHints(withModel)['sec-ch-ua-model'], '"SM-S918B"')
 })
 
@@ -536,6 +543,8 @@ test('detects the platform and its version', t => {
     ['Mozilla/5.0 (Windows NT) Chrome/120.0.0.0', 'Windows', undefined],
     [chromeUA('X11; CrOS x86_64 14541.0.0'), 'Chrome OS', '14541.0.0'],
     [chromeUA('Macintosh; Intel Mac OS X 14_6'), 'macOS', '14.6'],
+    [chromeUA('Macintosh; Intel Mac OS X 10_15_7'), 'macOS', '10.15.7'],
+    [chromeUA('Intel Mac OS X'), 'macOS', undefined],
     [chromeUA('Macintosh'), 'macOS', undefined],
     [
       chromeUA('X11; Linux x86_64').replace(
@@ -595,5 +604,329 @@ test('detects the form factor of Apple and Android devices', t => {
       userAgent
     )
     t.is(headers['sec-ch-ua-model'], model, userAgent)
+  }
+})
+
+test('matches platform tokens regardless of case', t => {
+  const cases = [
+    [chromeUA('X11; Linux x86_64'), 'Linux'],
+    [chromeUA('X11; Ubuntu'), 'Ubuntu'],
+    [chromeUA('Macintosh'), 'macOS'],
+    [chromeUA('Macintosh; Intel Mac OS X 10_15_7'), 'macOS', '10.15.7'],
+    [chromeUA('X11; CrOS x86_64 14541.0.0'), 'Chrome OS'],
+    [chromeUA('X11; FreeBSD amd64'), 'FreeBSD'],
+    [chromeUA('X11; OpenBSD amd64'), 'OpenBSD'],
+    [chromeUA('X11; NetBSD amd64'), 'NetBSD'],
+    ['SpringBoard/50 CFNetwork/1209 Darwin/20.2.0', 'iOS'],
+    [
+      chromeUA(
+        'Linux; Android 10; HarmonyOS; HLK-AL00',
+        '88.0.4324.93',
+        'Mobile Safari/537.36'
+      ),
+      'HarmonyOS'
+    ]
+  ]
+
+  for (const [userAgent, platform, version] of cases) {
+    const headers = uaHints(userAgent.toLowerCase())
+    t.is(headers['sec-ch-ua-platform'], JSON.stringify(platform), userAgent)
+    if (version) {
+      t.is(
+        headers['sec-ch-ua-platform-version'],
+        JSON.stringify(version),
+        userAgent
+      )
+    }
+  }
+})
+
+test('a glued platform token is not that platform', t => {
+  const cases = [
+    [chromeUA('X11; Linux x86_64; HarmonyOSPhone'), 'Linux'],
+    [chromeUA('X11; Linux x86_64; AndroidPhone'), 'Linux'],
+    [chromeUA('X11; FreeBSDextra'), undefined],
+    [chromeUA('X11; NotFreeBSD'), undefined]
+  ]
+  for (const [userAgent, platform] of cases) {
+    t.is(
+      uaHints(userAgent)['sec-ch-ua-platform'],
+      platform && JSON.stringify(platform),
+      userAgent
+    )
+  }
+})
+
+test('a product token that contains HarmonyOS is not the platform', t => {
+  const headers = uaHints(
+    chromeUA(
+      'X11; Linux x86_64',
+      '131.0.0.0',
+      'Safari/537.36 MyApp-HarmonyOS/1.0'
+    )
+  )
+  t.is(headers['sec-ch-ua-platform'], '"Linux"')
+  t.is(headers['sec-ch-ua-form-factors'], '["Desktop"]')
+})
+
+test('HarmonyOS uses the Android device field', t => {
+  const phone = uaHints(
+    chromeUA(
+      'Linux; Android 10; HarmonyOS; HLK-AL00; HMSCore 6.10.0.312',
+      '88.0.4324.93',
+      'Mobile Safari/537.36'
+    )
+  )
+  t.is(phone['sec-ch-ua-model'], '"HLK-AL00"')
+  t.is(phone['sec-ch-ua-form-factors'], '["Mobile"]')
+
+  const tablet = uaHints(
+    chromeUA('Linux; Android 10; HarmonyOS; AGS3-W09', '120.0.0.0')
+  )
+  t.is(tablet['sec-ch-ua-platform'], '"HarmonyOS"')
+  t.is(tablet['sec-ch-ua-model'], '"AGS3-W09"')
+  t.is(tablet['sec-ch-ua-form-factors'], '["Tablet"]')
+
+  const bare = uaHints('Mozilla/5.0 (Linux; Android 10; HarmonyOS)')
+  t.is(bare['sec-ch-ua-platform'], '"HarmonyOS"')
+  t.false('sec-ch-ua-model' in bare)
+  t.is(bare['sec-ch-ua-form-factors'], '["Desktop"]')
+})
+
+test('a locale is not the device model', t => {
+  const modelOf = userAgent => uaHints(userAgent)['sec-ch-ua-model']
+
+  t.is(modelOf('Mozilla/5.0 (Linux; Android 10; en-US)'), undefined)
+  t.is(modelOf('Mozilla/5.0 (Linux; Android 10; zh_CN)'), undefined)
+  t.is(modelOf('Mozilla/5.0 (Linux; Android 10; es-419)'), undefined)
+  t.is(
+    modelOf(
+      'Mozilla/5.0 (Linux; Android 9; zh_CN; MI 8 Build/PKQ1.180729.001) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
+    ),
+    '"MI 8"'
+  )
+  t.is(
+    modelOf(
+      'Mozilla/5.0 (Linux; Android 9; es-419; MI 8 Build/PKQ1.180729.001) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
+    ),
+    '"MI 8"'
+  )
+  t.is(
+    modelOf(
+      'Mozilla/5.0 (Linux; Android 4.1.2; U; en-us; GT-I9300 Build/JZO54K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
+    ),
+    '"GT-I9300"'
+  )
+})
+
+test('omits the reduced model regardless of case', t => {
+  const headers = uaHints(
+    chromeUA(
+      'Linux; Android 10; K',
+      '120.0.0.0',
+      'Mobile Safari/537.36'
+    ).toLowerCase()
+  )
+  t.false('sec-ch-ua-model' in headers)
+  t.is(headers['sec-ch-ua-mobile'], '?1')
+
+  const tablet = uaHints(
+    chromeUA('Linux; Android 10; K', '120.0.0.0').toLowerCase()
+  )
+  t.false('sec-ch-ua-model' in tablet)
+  t.is(tablet['sec-ch-ua-form-factors'], '["Tablet"]')
+})
+
+test('hints come only from the first 500 characters', t => {
+  const inside = chromeUA('Windows NT 10.0; Win64; x64; WOW64')
+  t.true(inside.length < 500)
+  const withTail = inside + ' '.repeat(500)
+  t.is(uaHints(withTail)['sec-ch-ua-arch'], '"x86"')
+  t.is(uaHints(withTail)['sec-ch-ua-bitness'], '"64"')
+  t.is(uaHints(withTail)['sec-ch-ua-wow64'], '?1')
+
+  const head = chromeUA('Windows NT 10.0')
+  const outside = `${head}${'x'.repeat(500)} Win64; x64; WOW64`
+  const headers = uaHints(outside)
+  t.true('sec-ch-ua' in headers)
+  t.false('sec-ch-ua-arch' in headers)
+  t.false('sec-ch-ua-bitness' in headers)
+  t.is(headers['sec-ch-ua-wow64'], '?0')
+
+  // The digit that distinguishes NT 6.1 (Windows 7) from NT 6.11 sits on the
+  // cut. One character less or more changes the platform version.
+  const version = 'Windows NT 6.1'
+  const prefix = 'Mozilla/5.0 ('
+  const capped =
+    prefix + 'x'.repeat(500 - prefix.length - version.length) + version
+  t.is(capped.length, 500)
+  const bounded = `${capped}1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36`
+  t.is(uaHints(bounded)['sec-ch-ua-platform-version'], '"7"')
+})
+
+test('treats Chrome 28 as the first Blink version', t => {
+  t.deepEqual(
+    uaHints(chromeUA('Windows NT 10.0; Win64; x64', '27.0.1453.93')),
+    {}
+  )
+  t.true(
+    'sec-ch-ua' in
+      uaHints(chromeUA('Windows NT 10.0; Win64; x64', '28.0.1500.71'))
+  )
+})
+
+test('reads a Windows version with no space after NT', t => {
+  const headers = uaHints(
+    'Mozilla/5.0 (Windows NT10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+  )
+  t.is(headers['sec-ch-ua-platform'], '"Windows"')
+  t.is(headers['sec-ch-ua-platform-version'], '"10"')
+})
+
+test('Android with no version is still Android', t => {
+  const headers = uaHints(
+    'Mozilla/5.0 (Linux; Android) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+  )
+  t.is(headers['sec-ch-ua-platform'], '"Android"')
+  t.false('sec-ch-ua-platform-version' in headers)
+})
+
+test('Linux wins when the user agent also names a BSD', t => {
+  const headers = uaHints(chromeUA('X11; Linux FreeBSD'))
+  t.is(headers['sec-ch-ua-platform'], '"Linux"')
+})
+
+test('maps every Windows NT version', t => {
+  const versions = [
+    ['10.0', '10'],
+    ['6.4', '10'],
+    ['6.3', '8.1'],
+    ['6.2', '8'],
+    ['6.1', '7'],
+    ['6.0', 'Vista'],
+    ['5.2', 'XP'],
+    ['5.1', 'XP'],
+    ['5.0', '2000'],
+    ['4.0', '4.0']
+  ]
+
+  for (const [nt, platformVersion] of versions) {
+    const headers = uaHints(chromeUA(`Windows NT ${nt}`))
+    t.is(
+      headers['sec-ch-ua-platform-version'],
+      JSON.stringify(platformVersion),
+      nt
+    )
+  }
+})
+
+test('iPod is a phone', t => {
+  // `CPU OS`, not `CPU iPhone OS`: the iPhone token would satisfy the iOS
+  // alternation without the iPod branch.
+  const headers = uaHints(chromeUA('iPod; CPU OS 15_0 like Mac OS X'))
+  t.is(headers['sec-ch-ua-platform'], '"iOS"')
+  t.is(headers['sec-ch-ua-platform-version'], '"15.0"')
+  t.is(headers['sec-ch-ua-model'], '"iPod"')
+  t.is(headers['sec-ch-ua-mobile'], '?1')
+  t.is(headers['sec-ch-ua-form-factors'], '["Mobile"]')
+})
+
+test('reads Android at the start of the string and after an opening parenthesis', t => {
+  const atStart =
+    'Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
+  const paren = chromeUA(
+    'Android 14; Pixel 8',
+    '120.0.0.0',
+    'Mobile Safari/537.36'
+  )
+
+  for (const userAgent of [atStart, paren]) {
+    const headers = uaHints(userAgent)
+    t.is(headers['sec-ch-ua-platform'], '"Android"', userAgent)
+    t.is(headers['sec-ch-ua-platform-version'], '"14"', userAgent)
+    t.is(headers['sec-ch-ua-model'], '"Pixel 8"', userAgent)
+  }
+})
+
+test('WebView requires the closing parenthesis after wv', t => {
+  const headers = uaHints(
+    'Mozilla/5.0 (Linux; Android 13; wv Build/X) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
+  )
+  t.true(headers['sec-ch-ua'].includes('"Google Chrome"'))
+  t.false(headers['sec-ch-ua'].includes('"Chrome WebView"'))
+})
+
+test('Electron without a following Safari token is Chrome', t => {
+  const headers = uaHints(
+    chromeUA('Windows NT 10.0; Win64; x64', '120.0.0.0', 'Electron/39.5.1')
+  )
+  t.true(headers['sec-ch-ua'].includes('"Google Chrome"'))
+  t.false(headers['sec-ch-ua'].includes('"Electron"'))
+})
+
+test('names every embedder in the product table', t => {
+  const cases = [
+    ['EdgiOS/120.0.2210.61', 'Microsoft Edge', '120.0.2210.61'],
+    ['OPRGX/90.0.4480.84', 'Opera GX', '90.0.4480.84'],
+    ['OPX/90.0.4480.84', 'Opera GX', '90.0.4480.84'],
+    ['AVG/1.2.3.4', 'AVG Secure Browser', '1.2.3.4'],
+    ['Avast/1.2.3.4', 'Avast Secure Browser', '1.2.3.4'],
+    ['Norton/1.2.3.4', 'Norton Private Browser', '1.2.3.4'],
+    ['Maxthon/7.0.1.0', 'Maxthon', '7.0.1.0'],
+    ['QQBrowser/12.1.0.0', 'QQBrowser', '12.1.0.0'],
+    ['UCBrowser/13.4.0.1306', 'UCBrowser', '13.4.0.1306'],
+    ['Iron/120.0.0.0', 'Iron', '120.0.0.0'],
+    ['Dragon/120.0.0.0', 'Dragon', '120.0.0.0'],
+    ['Sleipnir/6.4.1', 'Sleipnir', '6.4.1'],
+    ['QuarkPC/4.0.1.0', 'Quark', '4.0.1.0'],
+    ['HuaweiBrowser/14.0.0.301', 'Huawei Browser', '14.0.0.301'],
+    ['MQQBrowser/13.3.0', 'QQBrowser', '13.3.0'],
+    ['MiuiBrowser/17.4.0', 'MIUI Browser', '17.4.0'],
+    ['HeyTapBrowser/40.8.7.1', 'HeyTap', '40.8.7.1'],
+    ['VivoBrowser/21.0.0.0', 'Vivo Browser', '21.0.0.0'],
+    ['MicroMessenger/8.0.49', 'WeChat', '8.0.49'],
+    ['KAKAOTALK/10.6.2', 'KAKAOTALK', '10.6.2'],
+    ['FBAV/440.0.0.29.112', 'Facebook', '440.0.0.29.112'],
+    ['Instagram 300.0.0.0.0', 'Instagram', '300.0.0.0.0'],
+    ['Snapchat/12.80.0.32', 'Snapchat', '12.80.0.32'],
+    ['Zalo android/24.01.01', 'Zalo', '24.01.01'],
+    ['musical_ly_99.0 app_version/32.1.1', 'TikTok', '32.1.1'],
+    ['trill_99.0 app_version/32.1.1', 'TikTok', '32.1.1'],
+    ['musical_ly_32.1.1', 'TikTok', '32.1.1'],
+    ['trill_32.1.1', 'TikTok', '32.1.1']
+  ]
+
+  for (const [token, brand, version] of cases) {
+    const userAgent = chromeUA(
+      'Windows NT 10.0; Win64; x64',
+      '120.0.0.0',
+      `Safari/537.36 ${token}`
+    )
+    const headers = uaHints(userAgent)
+    t.true(headers['sec-ch-ua'].includes(JSON.stringify(brand)), token)
+    t.is(headers['sec-ch-ua-full-version'], JSON.stringify(version), token)
+  }
+})
+
+test('rejects every non-Blink engine token', t => {
+  const userAgents = [
+    'Mozilla/5.0 AppleWebKit/605.1.15 Version/17.0',
+    'Opera/9.80 (Windows NT 6.1) Presto/2.12.388 Version/12.17',
+    'Mozilla/5.0 Gecko/20100101 Firefox/100.0',
+    'Mozilla/5.0 rv:1.9.2) Gecko',
+    'SAMSUNG-GT-S5230/S5230RFJK1 NetFront/3.5',
+    'Mozilla/5.0 (compatible; Konqueror/4.4; Linux) KHTML/4.4.0',
+    'Links/2.29 (Linux)',
+    'ELinks/0.13.5',
+    'Lynx/2.8.9rel.1 libwww-FM/2.14',
+    'w3m/0.5.3',
+    'Dillo/3.0.5',
+    'iCab/6.0',
+    'Ladybird/1.0',
+    'Mozilla/5.0 Goanna/6.2'
+  ]
+
+  for (const userAgent of userAgents) {
+    t.deepEqual(uaHints(userAgent), {}, userAgent)
   }
 })
