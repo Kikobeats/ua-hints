@@ -154,7 +154,11 @@ test('detects architecture and bitness', t => {
     ['Windows NT 10.0; Win64; x64', '"x86"', '"64"'],
     ['X11; Linux armv7l', '"arm"', '"32"'],
     ['X11; Linux i686', '"x86"', '"32"'],
-    ['Macintosh; Intel Mac OS X 10_15_7', undefined, undefined]
+    ['Macintosh; Intel Mac OS X 10_15_7', undefined, undefined],
+    ['X11; Linux aarch64', '"arm"', '"64"'],
+    ['Linux; Android 10; HarmonyOS; HLK-AL00', undefined, undefined],
+    ['X11; Linux x86_64; HarmonyOS', '"x86"', '"64"'],
+    ['Linux; Android 10; HarmonyOS; AArch64', '"arm"', '"64"']
   ]
 
   for (const [platform, arch, bitness] of architectures) {
@@ -162,6 +166,10 @@ test('detects architecture and bitness', t => {
     t.is(headers['sec-ch-ua-arch'], arch, platform)
     t.is(headers['sec-ch-ua-bitness'], bitness, platform)
   }
+
+  const leading = uaHints('aarch64 Chrome/120.0.0.0')
+  t.is(leading['sec-ch-ua-arch'], '"arm"')
+  t.is(leading['sec-ch-ua-bitness'], '"64"')
 })
 
 test('omits `sec-ch-ua-model` on desktop', t => {

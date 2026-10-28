@@ -26,7 +26,8 @@ const BRAND_ORDERS = [
 
 const CACHE_SIZE = 1000
 
-const ARM = /arm|aarch64/
+// A leading boundary keeps `arm` inside `HarmonyOS` from becoming the arch.
+const ARM = /(?:^|[^a-z0-9])(?:aarch64|arm)/
 const X86 = /x86|i686|i386|amd64|x64/
 const SIXTY_FOUR_BIT = /arm64|aarch64|x86_64|amd64|win64|x64/
 
