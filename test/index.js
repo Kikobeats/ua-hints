@@ -955,6 +955,19 @@ test('a field token can follow a semicolon with no space', t => {
 
   const harmony = uaHints(`Mozilla/5.0 (;HarmonyOS)${tail}`)
   t.is(harmony['sec-ch-ua-platform'], '"HarmonyOS"')
+
+  const tabbed = uaHints(`;\tiPhone; CPU iPhone OS 17_0 like Mac OS X)${tail}`)
+  t.is(tabbed['sec-ch-ua-platform'], '"iOS"')
+  t.is(tabbed['sec-ch-ua-model'], '"iPhone"')
+  t.is(tabbed['sec-ch-ua-form-factors'], '["Mobile"]')
+
+  const tabAndroid = uaHints(`Mozilla/5.0 (;\tAndroid 14; Pixel 8)${tail}`)
+  t.is(tabAndroid['sec-ch-ua-platform'], '"Android"')
+  t.is(tabAndroid['sec-ch-ua-platform-version'], '"14"')
+  t.is(tabAndroid['sec-ch-ua-model'], '"Pixel 8"')
+
+  const tabHarmony = uaHints(`Mozilla/5.0 (;\tHarmonyOS)${tail}`)
+  t.is(tabHarmony['sec-ch-ua-platform'], '"HarmonyOS"')
 })
 
 test('reads Android at the start of the string and after an opening parenthesis', t => {

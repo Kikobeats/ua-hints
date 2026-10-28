@@ -74,13 +74,13 @@ const WINDOWS_VERSIONS = {
 }
 
 const WINDOWS = /\bWindows NT(?![A-Za-z]) ?(\d+(?:\.\d+)?)?/i
-const HARMONY = /(?:^|[(;] ?)HarmonyOS\b/i
-const ANDROID = /(?:^|[(;] ?)Android\b(?: ([\d.]+))?/i
+const HARMONY = /(?:^|[(;]\s?)HarmonyOS\b/i
+const ANDROID = /(?:^|[(;]\s?)Android\b(?: ([\d.]+))?/i
 const CHROME_OS = /\bCrOS \S+ ([\d.]+)/i
 // The device token has to follow the start, `(`, or `;`. A product such as
 // `MyApp-iPhone` is not the platform. The OS version is optional: without it,
 // `like Mac OS X` would make an iPhone macOS.
-const IOS = /(?:^|[(;] ?)(?:iPhone|iPad|iPod)\b(?:.*?\bi?OS(?: ([\d_.]+))?)?/i
+const IOS = /(?:^|[(;]\s?)(?:iPhone|iPad|iPod)\b(?:.*?\bi?OS(?: ([\d_.]+))?)?/i
 const BSD = /\b(Free|Open|Net)BSD\b/i
 const MAC_OS = /\bMac OS X\b(?: ([\d_.]+))?/i
 const CFNETWORK = /\bCFNetwork\//i
@@ -93,12 +93,12 @@ const BSD_PLATFORM = { free: 'FreeBSD', open: 'OpenBSD', net: 'NetBSD' }
 
 // Same field boundary as the iOS platform, so a device at the start of the
 // string or after `;` still has a model. A product like `MyApp-iPhone` does not.
-const APPLE_DEVICE = /(?:^|[(;] ?)(iPhone|iPad|iPod)\b/i
+const APPLE_DEVICE = /(?:^|[(;]\s?)(iPhone|iPad|iPod)\b/i
 // The device field follows the Android version. Skip a `U;` marker, a locale
 // (`zh-CN`, `zh_CN`, `es-419`), `HarmonyOS`, and Samsung's vendor prefix.
 // A later `Build/` or `HMSCore/` token is firmware, not the device name.
 const ANDROID_MODEL =
-  /(?:^|[(;] ?)Android\b[^;)]*;(?: U;)?(?: [a-z]{2,3}[-_](?:[a-z]{2}|\d{3});)?(?: HarmonyOS;)?(?: SAMSUNG)? ((?:[^;()/]|\([^;()/]*\))+?)(?: [^\s;()]*\/[^;)]*)?[;)]/i
+  /(?:^|[(;]\s?)Android\b[^;)]*;(?: U;)?(?: [a-z]{2,3}[-_](?:[a-z]{2}|\d{3});)?(?: HarmonyOS;)?(?: SAMSUNG)? ((?:[^;()/]|\([^;()/]*\))+?)(?: [^\s;()]*\/[^;)]*)?[;)]/i
 const IGNORED_MODEL = /^(?:wv|harmonyos)$/i
 const LOCALE_MODEL = /^[a-z]{2,3}[-_](?:[a-z]{2}|\d{3})$/i
 const TABLET_SAFARI = /\/[\w.]+ Safari\//i
